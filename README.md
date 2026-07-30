@@ -47,3 +47,14 @@ backend/
 ```
 
 Ver [TASKS.md](TASKS.md) para el detalle de qué HU cubre cada endpoint.
+
+## Deploy en Vercel
+
+El servidor Express normal (`src/index.ts`, con `.listen()`) es solo para desarrollo local — Vercel no ejecuta procesos persistentes. El punto de entrada real en producción es [`api/index.ts`](api/index.ts), que exporta la app de Express directamente (sin `.listen()`); [`vercel.json`](vercel.json) reescribe todas las rutas hacia esa función para que Express siga resolviendo `/health` y `/api/*` con su propio router, sin cambios.
+
+Antes de desplegar, en el proyecto de Vercel (Project Settings → Environment Variables) hay que configurar:
+- `DATABASE_URL` y `DIRECT_URL` (las mismas del `.env`, apuntando a Supabase)
+- `JWT_SECRET` (un valor propio, no el de demo)
+- `DEMO_DELAY_MS=0` (opcional)
+
+`postinstall: prisma generate` ya está en `package.json` — Vercel lo corre automáticamente en cada build, así el cliente de Prisma queda generado con el binario correcto (`binaryTargets` en `prisma/schema.prisma` incluye `rhel-openssl-3.0.x` para el runtime Linux de Vercel).
