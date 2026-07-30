@@ -58,3 +58,7 @@ Antes de desplegar, en el proyecto de Vercel (Project Settings → Environment V
 - `DEMO_DELAY_MS=0` (opcional)
 
 `postinstall: prisma generate` ya está en `package.json` — Vercel lo corre automáticamente en cada build, así el cliente de Prisma queda generado con el binario correcto (`binaryTargets` en `prisma/schema.prisma` incluye `rhel-openssl-3.0.x` para el runtime Linux de Vercel).
+
+## Licencia
+
+Todos los derechos reservados — ver [LICENSE](LICENSE).
