@@ -6,7 +6,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 
 export const citaController = {
   listar: asyncHandler(async (_req: Request, res: Response) => {
-    res.json({ citas: citaService.listar() });
+    res.json({ citas: await citaService.listar() });
   }),
 
   disponibilidad: asyncHandler(async (req: Request, res: Response) => {
@@ -15,7 +15,7 @@ export const citaController = {
     if (!veterinarioId || !fecha) {
       return res.status(400).json({ error: "veterinarioId y fecha son obligatorios" });
     }
-    res.json({ bloques: citaService.disponibilidad(veterinarioId, fecha) });
+    res.json({ bloques: await citaService.disponibilidad(veterinarioId, fecha) });
   }),
 
   cambiarEstado: asyncHandler(async (req: Request, res: Response) => {
@@ -24,18 +24,18 @@ export const citaController = {
     if (!estado) {
       return res.status(400).json({ error: "El nuevo estado es obligatorio" });
     }
-    const cita = citaService.cambiarEstado(id, estado);
+    const cita = await citaService.cambiarEstado(id, estado);
     res.json({ cita });
   }),
 
   crear: asyncHandler(async (req: AuthRequest, res: Response) => {
-    const cita = citaService.crear(req.body, req.usuario!);
+    const cita = await citaService.crear(req.body, req.usuario!);
     res.status(201).json({ cita });
   }),
 
   reprogramar: asyncHandler(async (req: AuthRequest, res: Response) => {
     const id = Number(req.params.id);
-    const cita = citaService.reprogramar(id, req.body, req.usuario!);
+    const cita = await citaService.reprogramar(id, req.body, req.usuario!);
     res.json({ cita });
   }),
 };

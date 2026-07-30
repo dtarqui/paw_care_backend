@@ -17,7 +17,7 @@ function filtrosDesdeQuery(req: Request): FiltrosReporte {
 export const reporteController = {
   // HU7
   ingresos: asyncHandler(async (req: Request, res: Response) => {
-    res.json(reporteService.ingresos(filtrosDesdeQuery(req)));
+    res.json(await reporteService.ingresos(filtrosDesdeQuery(req)));
   }),
 
   // HU8 — datos para pantalla + gráfico
@@ -25,9 +25,9 @@ export const reporteController = {
     const tipo = String(req.query.tipo ?? "atenciones");
     const filtros = filtrosDesdeQuery(req);
     if (tipo === "ingresos-por-servicio") {
-      res.json({ tipo, grupos: reporteService.ingresosPorServicio(filtros) });
+      res.json({ tipo, grupos: await reporteService.ingresosPorServicio(filtros) });
     } else {
-      res.json({ tipo, atenciones: reporteService.atencionesPorPeriodo(filtros) });
+      res.json({ tipo, atenciones: await reporteService.atencionesPorPeriodo(filtros) });
     }
   }),
 
@@ -43,7 +43,7 @@ export const reporteController = {
         { header: "Cantidad", key: "cantidad", width: 12 },
         { header: "Monto (Bs.)", key: "monto", width: 15 },
       ];
-      sheet.addRows(reporteService.ingresosPorServicio(filtros));
+      sheet.addRows(await reporteService.ingresosPorServicio(filtros));
     } else {
       sheet.columns = [
         { header: "Fecha", key: "fecha", width: 22 },
@@ -53,7 +53,7 @@ export const reporteController = {
         { header: "Monto (Bs.)", key: "montoConsulta", width: 14 },
         { header: "Estado de pago", key: "estadoPago", width: 16 },
       ];
-      sheet.addRows(reporteService.atencionesPorPeriodo(filtros));
+      sheet.addRows(await reporteService.atencionesPorPeriodo(filtros));
     }
     sheet.getRow(1).font = { bold: true };
 
@@ -85,14 +85,14 @@ export const reporteController = {
     doc.fillColor("#000");
 
     if (tipo === "ingresos-por-servicio") {
-      const grupos = reporteService.ingresosPorServicio(filtros);
+      const grupos = await reporteService.ingresosPorServicio(filtros);
       dibujarTabla(
         doc,
         ["Tipo de servicio", "Cantidad", "Monto (Bs.)"],
         grupos.map((g) => [g.tipoServicio, String(g.cantidad), g.monto.toFixed(2)])
       );
     } else {
-      const atenciones = reporteService.atencionesPorPeriodo(filtros);
+      const atenciones = await reporteService.atencionesPorPeriodo(filtros);
       dibujarTabla(
         doc,
         ["Fecha", "Mascota", "Tipo de servicio", "Monto", "Estado"],

@@ -8,7 +8,7 @@ export const authController = {
     if (!username || !password) {
       return res.status(400).json({ error: "Usuario y contraseña son obligatorios" });
     }
-    const resultado = authService.login(username, password);
+    const resultado = await authService.login(username, password);
     res.json(resultado);
   }),
 };

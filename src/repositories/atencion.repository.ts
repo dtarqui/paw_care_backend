@@ -1,33 +1,74 @@
-import { AtencionRegistro, atenciones } from "../data/atenciones.data";
+import { prisma } from "../lib/prisma";
+import { EstadoPagoAtencion } from "../types";
+import { dateToLiteral } from "../utils/date";
+
+export interface AtencionRegistro {
+  id: number;
+  mascotaId: number;
+  veterinarioId: number;
+  fecha: string; // literal "YYYY-MM-DDTHH:mm"
+  tipoServicio: string;
+  diagnostico: string;
+  tratamiento: string;
+  examenesExternos: string;
+  montoConsulta: number;
+  estadoPago: EstadoPagoAtencion;
+}
+
+type AtencionRow = NonNullable<Awaited<ReturnType<typeof prisma.atencionMedica.findUnique>>>;
+
+function aDominio(row: AtencionRow): AtencionRegistro {
+  return {
+    id: row.id,
+    mascotaId: row.mascotaId,
+    veterinarioId: row.veterinarioId,
+    fecha: dateToLiteral(row.fecha),
+    tipoServicio: row.tipoServicio,
+    diagnostico: row.diagnostico,
+    tratamiento: row.tratamiento,
+    examenesExternos: row.examenesExternos ?? "",
+    montoConsulta: Number(row.montoConsulta),
+    estadoPago: row.estadoPago,
+  };
+}
+
+export interface NuevaAtencionRegistro {
+  mascotaId: number;
+  veterinarioId: number;
+  tipoServicio: string;
+  diagnostico: string;
+  tratamiento: string;
+  examenesExternos: string;
+  montoConsulta: number;
+}
 
 export const atencionRepository = {
-  findAll(): AtencionRegistro[] {
-    return [...atenciones].sort((a, b) => b.fecha.localeCompare(a.fecha));
+  async findAll(): Promise<AtencionRegistro[]> {
+    const rows = await prisma.atencionMedica.findMany({ orderBy: { fecha: "desc" } });
+    return rows.map(aDominio);
   },
 
-  findByMascotaId(mascotaId: number): AtencionRegistro[] {
-    return atenciones.filter((a) => a.mascotaId === mascotaId).sort((a, b) => b.fecha.localeCompare(a.fecha));
+  async findByMascotaId(mascotaId: number): Promise<AtencionRegistro[]> {
+    const rows = await prisma.atencionMedica.findMany({ where: { mascotaId }, orderBy: { fecha: "desc" } });
+    return rows.map(aDominio);
   },
 
-  findById(id: number): AtencionRegistro | undefined {
-    return atenciones.find((a) => a.id === id);
+  async findById(id: number): Promise<AtencionRegistro | undefined> {
+    const row = await prisma.atencionMedica.findUnique({ where: { id } });
+    return row ? aDominio(row) : undefined;
   },
 
-  findPendientes(): AtencionRegistro[] {
-    return atenciones.filter((a) => a.estadoPago === "PENDIENTE");
+  async findPendientes(): Promise<AtencionRegistro[]> {
+    const rows = await prisma.atencionMedica.findMany({ where: { estadoPago: "PENDIENTE" } });
+    return rows.map(aDominio);
   },
 
-  marcarPagada(id: number): void {
-    const atencion = atenciones.find((a) => a.id === id);
-    if (atencion) atencion.estadoPago = "PAGADO";
+  async marcarPagada(id: number): Promise<void> {
+    await prisma.atencionMedica.update({ where: { id }, data: { estadoPago: "PAGADO" } });
   },
 
-  create(registro: AtencionRegistro): AtencionRegistro {
-    atenciones.push(registro);
-    return registro;
-  },
-
-  nextId(): number {
-    return Math.max(0, ...atenciones.map((a) => a.id)) + 1;
+  async create(input: NuevaAtencionRegistro): Promise<AtencionRegistro> {
+    const row = await prisma.atencionMedica.create({ data: { ...input, estadoPago: "PENDIENTE" } });
+    return aDominio(row);
   },
 };

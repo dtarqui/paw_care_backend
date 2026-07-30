@@ -1,5 +1,4 @@
-import { ControlRegistro } from "../data/controles-preventivos.data";
-import { controlPreventivoRepository } from "../repositories/controlPreventivo.repository";
+import { ControlRegistro, controlPreventivoRepository } from "../repositories/controlPreventivo.repository";
 import { mascotaRepository } from "../repositories/mascota.repository";
 import { ControlPreventivo, TipoControlPreventivo } from "../types";
 import { addDays, todayISO } from "../utils/date";
@@ -18,8 +17,11 @@ interface NuevoControlInput {
   proximaDosis?: string;
 }
 
-function hidratar(registro: ControlRegistro): ControlPreventivo {
-  const mascota = mascotaRepository.findById(registro.mascotaId)!;
+async function hidratar(registro: ControlRegistro): Promise<ControlPreventivo> {
+  const mascota = await mascotaRepository.findById(registro.mascotaId);
+  if (!mascota) {
+    throw new Error(`Integridad de datos: el control ${registro.id} referencia una mascota inexistente`);
+  }
   return {
     id: registro.id,
     mascota: { id: mascota.id, nombre: mascota.nombre, especie: mascota.especie },
@@ -31,38 +33,37 @@ function hidratar(registro: ControlRegistro): ControlPreventivo {
 }
 
 export const controlPreventivoService = {
-  historialDeMascota(mascotaId: number): ControlPreventivo[] {
-    if (!mascotaRepository.findById(mascotaId)) {
+  async historialDeMascota(mascotaId: number): Promise<ControlPreventivo[]> {
+    if (!(await mascotaRepository.findById(mascotaId))) {
       throw new DatosDeControlInvalidosError("La mascota no existe");
     }
-    return controlPreventivoRepository.findByMascotaId(mascotaId).map(hidratar);
+    const registros = await controlPreventivoRepository.findByMascotaId(mascotaId);
+    return Promise.all(registros.map(hidratar));
   },
 
-  proximosAVencer(dias: number): ControlPreventivo[] {
+  async proximosAVencer(dias: number): Promise<ControlPreventivo[]> {
     const limite = addDays(todayISO(), dias);
-    return controlPreventivoRepository
-      .findAll()
-      .map(hidratar)
+    const registros = await controlPreventivoRepository.findAll();
+    const hidratados = await Promise.all(registros.map(hidratar));
+    return hidratados
       .filter((c) => c.proximaDosis && c.proximaDosis <= limite)
       .sort((a, b) => a.proximaDosis.localeCompare(b.proximaDosis));
   },
 
-  crear(input: NuevoControlInput): ControlPreventivo {
+  async crear(input: NuevoControlInput): Promise<ControlPreventivo> {
     if (!input.mascotaId || !input.tipo || !input.fechaAplicacion) {
       throw new DatosDeControlInvalidosError("Mascota, tipo y fecha de aplicación son obligatorios");
     }
-    if (!mascotaRepository.findById(input.mascotaId)) {
+    if (!(await mascotaRepository.findById(input.mascotaId))) {
       throw new DatosDeControlInvalidosError("La mascota no existe");
     }
 
-    const registro: ControlRegistro = {
-      id: controlPreventivoRepository.nextId(),
+    const registro = await controlPreventivoRepository.create({
       mascotaId: input.mascotaId,
       tipo: input.tipo,
       fechaAplicacion: input.fechaAplicacion,
-      proximaDosis: input.proximaDosis ?? "",
-    };
-    controlPreventivoRepository.create(registro);
+      proximaDosis: input.proximaDosis,
+    });
     return hidratar(registro);
   },
 };

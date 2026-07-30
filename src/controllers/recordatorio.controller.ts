@@ -4,11 +4,11 @@ import { asyncHandler } from "../utils/asyncHandler";
 
 export const recordatorioController = {
   pendientes: asyncHandler(async (_req: Request, res: Response) => {
-    res.json({ recordatorios: recordatorioService.pendientes() });
+    res.json({ recordatorios: await recordatorioService.pendientes() });
   }),
 
   marcarEnviado: asyncHandler(async (req: Request, res: Response) => {
-    recordatorioService.marcarEnviado(req.params.id);
+    await recordatorioService.marcarEnviado(req.params.id);
     res.json({ ok: true });
   }),
 };

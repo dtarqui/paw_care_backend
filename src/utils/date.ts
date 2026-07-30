@@ -42,3 +42,56 @@ export function sumarHoras(literalISO: string, horas: number): string {
   const mi2 = String(d.getMinutes()).padStart(2, "0");
   return `${y2}-${m2}-${d2}T${h2}:${mi2}`;
 }
+
+/**
+ * Puente entre los literales "YYYY-MM-DD" / "YYYY-MM-DDTHH:mm" que usa toda la
+ * capa de servicios/repositorios y los `Date` reales que exige Prisma. Siempre se
+ * construye y se lee con getters LOCALES (nunca UTC) — es la misma convención que
+ * ya usan `ahoraLiteral`/`sumarHoras`, así el viaje literal -> Date -> literal es
+ * exacto sin importar la zona horaria del proceso, siempre que sea la misma en
+ * escritura y lectura (un único proceso Node, que es el caso acá).
+ */
+export function literalToDate(literal: string): Date {
+  const [fecha, hora] = literal.split("T");
+  const [yyyy, mm, dd] = fecha.split("-").map(Number);
+  if (!hora) return new Date(yyyy, mm - 1, dd);
+  const [hh, mi] = hora.split(":").map(Number);
+  return new Date(yyyy, mm - 1, dd, hh, mi);
+}
+
+export function dateToLiteral(fecha: Date): string {
+  const yyyy = fecha.getFullYear();
+  const mm = String(fecha.getMonth() + 1).padStart(2, "0");
+  const dd = String(fecha.getDate()).padStart(2, "0");
+  const hh = String(fecha.getHours()).padStart(2, "0");
+  const mi = String(fecha.getMinutes()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+}
+
+export function dateToLiteralDate(fecha: Date): string {
+  const yyyy = fecha.getFullYear();
+  const mm = String(fecha.getMonth() + 1).padStart(2, "0");
+  const dd = String(fecha.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/**
+ * Para columnas `@db.Date` (sin hora, ej. Mascota.fechaNacimiento,
+ * ControlPreventivo.fechaAplicacion/proximaDosis): a diferencia de un `DateTime`
+ * normal, Prisma siempre representa/lee un `@db.Date` como medianoche UTC del
+ * calendario guardado, sin importar la zona horaria del proceso. Usar los
+ * getters/constructores LOCALES de `literalToDate`/`dateToLiteralDate` ahí corre
+ * la fecha un día para adelante o atrás según el offset del servidor — por eso
+ * estas dos variantes usan explícitamente UTC.
+ */
+export function literalDateOnlyToDate(literalYYYYMMDD: string): Date {
+  const [yyyy, mm, dd] = literalYYYYMMDD.split("-").map(Number);
+  return new Date(Date.UTC(yyyy, mm - 1, dd));
+}
+
+export function dateOnlyToLiteral(fecha: Date): string {
+  const yyyy = fecha.getUTCFullYear();
+  const mm = String(fecha.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(fecha.getUTCDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}

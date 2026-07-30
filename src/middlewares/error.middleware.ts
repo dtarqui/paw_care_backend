@@ -13,6 +13,7 @@ import { DatosDeAtencionInvalidosError } from "../services/atencion.service";
 import { DatosDeControlInvalidosError } from "../services/controlPreventivo.service";
 import { DatosDeMedicamentoInvalidosError, StockInsuficienteError } from "../services/medicamento.service";
 import { DatosDeImportacionInvalidosError } from "../services/importacion.service";
+import { RecordatorioNoEncontradoError } from "../services/recordatorio.service";
 
 // Middleware de errores centralizado: cada servicio lanza errores de dominio
 // (clases propias) y aquí es el único lugar que los traduce a códigos HTTP.
@@ -24,7 +25,7 @@ export function errorMiddleware(err: unknown, _req: Request, res: Response, _nex
   if (err instanceof PagoInvalidoError) {
     return res.status(400).json({ error: err.message });
   }
-  if (err instanceof CitaNoEncontradaError) {
+  if (err instanceof CitaNoEncontradaError || err instanceof RecordatorioNoEncontradoError) {
     return res.status(404).json({ error: err.message });
   }
   if (err instanceof ConflictoDeAgendaError) {

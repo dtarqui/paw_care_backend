@@ -1,25 +1,45 @@
-import { veterinarios } from "../data/veterinarios.data";
+import { Prisma } from "@prisma/client";
+import { prisma } from "../lib/prisma";
 import { Veterinario } from "../types";
 
+const include = { usuario: { select: { nombre: true, apellidoPaterno: true } } } satisfies Prisma.VeterinarioInclude;
+type VeterinarioRow = Prisma.VeterinarioGetPayload<{ include: typeof include }>;
+
+function aDominio(row: VeterinarioRow): Veterinario {
+  return {
+    id: row.id,
+    usuarioId: row.usuarioId,
+    nombre: row.usuario.nombre,
+    apellidoPaterno: row.usuario.apellidoPaterno,
+    matricula: row.matricula,
+    especialidad: row.especialidad,
+  };
+}
+
+export interface NuevoVeterinarioRegistro {
+  usuarioId: number;
+  matricula: string;
+  especialidad: string;
+}
+
 export const veterinarioRepository = {
-  findAll(): Veterinario[] {
-    return veterinarios;
+  async findAll(): Promise<Veterinario[]> {
+    const rows = await prisma.veterinario.findMany({ include, orderBy: { id: "asc" } });
+    return rows.map(aDominio);
   },
 
-  findById(id: number): Veterinario | undefined {
-    return veterinarios.find((v) => v.id === id);
+  async findById(id: number): Promise<Veterinario | undefined> {
+    const row = await prisma.veterinario.findUnique({ where: { id }, include });
+    return row ? aDominio(row) : undefined;
   },
 
-  findByUsuarioId(usuarioId: number): Veterinario | undefined {
-    return veterinarios.find((v) => v.usuarioId === usuarioId);
+  async findByUsuarioId(usuarioId: number): Promise<Veterinario | undefined> {
+    const row = await prisma.veterinario.findUnique({ where: { usuarioId }, include });
+    return row ? aDominio(row) : undefined;
   },
 
-  create(veterinario: Veterinario): Veterinario {
-    veterinarios.push(veterinario);
-    return veterinario;
-  },
-
-  nextId(): number {
-    return Math.max(0, ...veterinarios.map((v) => v.id)) + 1;
+  async create(input: NuevoVeterinarioRegistro): Promise<Veterinario> {
+    const row = await prisma.veterinario.create({ data: input, include });
+    return aDominio(row);
   },
 };

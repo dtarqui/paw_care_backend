@@ -1,7 +1,6 @@
-import { citas } from "../data/citas.data";
-import { mascotas } from "../data/mascotas.data";
-import { veterinarios } from "../data/veterinarios.data";
 import { citaRepository } from "../repositories/cita.repository";
+import { mascotaRepository } from "../repositories/mascota.repository";
+import { veterinarioRepository } from "../repositories/veterinario.repository";
 import { Cita, EstadoCita, Rol } from "../types";
 
 export class CitaNoEncontradaError extends Error {
@@ -47,35 +46,34 @@ interface Solicitante {
   rol: Rol;
 }
 
-function generarCodigo(fechaISO: string): string {
+async function generarCodigo(fechaISO: string): Promise<string> {
   const yyyymmdd = fechaISO.replaceAll("-", "");
-  const secuencia = citas.filter((c) => c.codigo.includes(yyyymmdd)).length + 1;
+  const secuencia = (await citaRepository.contarPorCodigoParcial(yyyymmdd)) + 1;
   return `CITA-${yyyymmdd}-${String(secuencia).padStart(3, "0")}`;
 }
 
 export const citaService = {
-  listar() {
+  listar(): Promise<Cita[]> {
     return citaRepository.findAll();
   },
 
-  disponibilidad(veterinarioId: number, fechaISO: string) {
-    const ocupados = new Set(citaRepository.findOcupadosPorVeterinarioYFecha(veterinarioId, fechaISO));
+  async disponibilidad(veterinarioId: number, fechaISO: string) {
+    const ocupados = new Set(await citaRepository.findOcupadosPorVeterinarioYFecha(veterinarioId, fechaISO));
     return citaRepository.bloquesHorarioBase().map((hora) => ({
       hora,
       disponible: !ocupados.has(hora),
     }));
   },
 
-  cambiarEstado(id: number, nuevoEstado: EstadoCita) {
-    const cita = citas.find((c) => c.id === id);
+  async cambiarEstado(id: number, nuevoEstado: EstadoCita): Promise<Cita> {
+    const cita = await citaRepository.findById(id);
     if (!cita) throw new CitaNoEncontradaError();
-    cita.estado = nuevoEstado;
-    return cita;
+    return citaRepository.actualizarEstado(id, nuevoEstado);
   },
 
-  crear(input: NuevaCitaInput, solicitante: Solicitante): Cita {
-    const mascota = mascotas.find((m) => m.id === input.mascotaId);
-    const veterinario = veterinarios.find((v) => v.id === input.veterinarioId);
+  async crear(input: NuevaCitaInput, solicitante: Solicitante): Promise<Cita> {
+    const mascota = await mascotaRepository.findById(input.mascotaId);
+    const veterinario = await veterinarioRepository.findById(input.veterinarioId);
     if (!mascota || !veterinario || !input.fecha || !input.hora || !input.tipoConsulta) {
       throw new DatosDeCitaInvalidosError("Faltan datos obligatorios para agendar la cita");
     }
@@ -84,34 +82,30 @@ export const citaService = {
     // pueden agendar para cualquier veterinario. Se valida acá (no solo en el frontend)
     // porque el frontend no es una barrera de seguridad real.
     if (solicitante.rol === "VETERINARIO") {
-      const propioVeterinario = veterinarios.find((v) => v.usuarioId === solicitante.id);
+      const propioVeterinario = await veterinarioRepository.findByUsuarioId(solicitante.id);
       if (!propioVeterinario || propioVeterinario.id !== input.veterinarioId) {
         throw new AgendaAjenaError();
       }
     }
 
-    const ocupados = citaRepository.findOcupadosPorVeterinarioYFecha(input.veterinarioId, input.fecha);
+    const ocupados = await citaRepository.findOcupadosPorVeterinarioYFecha(input.veterinarioId, input.fecha);
     if (ocupados.includes(input.hora)) {
       throw new ConflictoDeAgendaError();
     }
 
-    const nuevaCita: Cita = {
-      id: Math.max(0, ...citas.map((c) => c.id)) + 1,
-      codigo: generarCodigo(input.fecha),
-      fechaHora: `${input.fecha}T${input.hora}:00.000Z`,
+    return citaRepository.create({
+      codigo: await generarCodigo(input.fecha),
+      fechaHora: `${input.fecha}T${input.hora}`,
       duracionMin: input.duracionMin ?? 30,
-      mascota: { id: mascota.id, nombre: mascota.nombre, especie: mascota.especie },
-      veterinario: { id: veterinario.id, nombre: veterinario.nombre, apellidoPaterno: veterinario.apellidoPaterno },
+      mascotaId: mascota.id,
+      veterinarioId: veterinario.id,
       tipoConsulta: input.tipoConsulta,
       motivo: input.motivo,
-      estado: "CONFIRMADA",
-    };
-    citas.push(nuevaCita);
-    return nuevaCita;
+    });
   },
 
-  reprogramar(id: number, input: { fecha: string; hora: string }, solicitante: Solicitante): Cita {
-    const cita = citas.find((c) => c.id === id);
+  async reprogramar(id: number, input: { fecha: string; hora: string }, solicitante: Solicitante): Promise<Cita> {
+    const cita = await citaRepository.findById(id);
     if (!cita) throw new CitaNoEncontradaError();
     if (cita.estado === "CANCELADA") {
       throw new DatosDeCitaInvalidosError("No se puede reprogramar una cita cancelada");
@@ -121,18 +115,17 @@ export const citaService = {
     }
 
     if (solicitante.rol === "VETERINARIO") {
-      const propioVeterinario = veterinarios.find((v) => v.usuarioId === solicitante.id);
+      const propioVeterinario = await veterinarioRepository.findByUsuarioId(solicitante.id);
       if (!propioVeterinario || propioVeterinario.id !== cita.veterinario.id) {
         throw new AgendaAjenaError();
       }
     }
 
-    const ocupados = citaRepository.findOcupadosPorVeterinarioYFecha(cita.veterinario.id, input.fecha, cita.id);
+    const ocupados = await citaRepository.findOcupadosPorVeterinarioYFecha(cita.veterinario.id, input.fecha, cita.id);
     if (ocupados.includes(input.hora)) {
       throw new ConflictoDeAgendaError();
     }
 
-    cita.fechaHora = `${input.fecha}T${input.hora}:00.000Z`;
-    return cita;
+    return citaRepository.reprogramar(id, `${input.fecha}T${input.hora}`);
   },
 };

@@ -8,7 +8,7 @@ import { router } from "./routes";
 export function createApp() {
   const app = express();
 
-  // Modo demo: sin restricción de origen (acepta cualquier frontend que lo consuma).
+  // Sin restricción de origen a propósito (acepta cualquier frontend que lo consuma).
   app.use(cors());
   app.use(express.json());
   app.use("/api", delayMiddleware, router);
@@ -27,7 +27,6 @@ export function createApp() {
     const status = db.status === "ok" ? 200 : 503;
     res.status(status).json({
       status: db.status === "ok" ? "ok" : "degraded",
-      modo: "demo",
       uptimeSegundos: Math.round(process.uptime()),
       timestamp: new Date().toISOString(),
       db,

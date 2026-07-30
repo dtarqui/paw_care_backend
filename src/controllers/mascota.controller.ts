@@ -4,7 +4,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 
 export const mascotaController = {
   listar: asyncHandler(async (_req: Request, res: Response) => {
-    res.json({ mascotas: mascotaService.listar() });
+    res.json({ mascotas: await mascotaService.listar() });
   }),
 
   buscar: asyncHandler(async (req: Request, res: Response) => {
@@ -12,11 +12,11 @@ export const mascotaController = {
     if (!ci) {
       return res.status(400).json({ error: "El parámetro ci es obligatorio" });
     }
-    res.json({ mascotas: mascotaService.buscarPorCiPropietario(ci) });
+    res.json({ mascotas: await mascotaService.buscarPorCiPropietario(ci) });
   }),
 
   crear: asyncHandler(async (req: Request, res: Response) => {
-    const mascota = mascotaService.crear(req.body);
+    const mascota = await mascotaService.crear(req.body);
     res.status(201).json({ mascota });
   }),
 };

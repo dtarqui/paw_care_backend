@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { usuarioRepository } from "../repositories/usuario.repository";
 import { UsuarioPublico } from "../types";
@@ -18,9 +19,9 @@ function aPublico(usuario: { password: string } & UsuarioPublico): UsuarioPublic
 }
 
 export const authService = {
-  login(username: string, password: string): { token: string; usuario: UsuarioPublico } {
-    const usuario = usuarioRepository.findByUsername(username);
-    if (!usuario || usuario.password !== password) {
+  async login(username: string, password: string): Promise<{ token: string; usuario: UsuarioPublico }> {
+    const usuario = await usuarioRepository.findByUsername(username);
+    if (!usuario || !(await bcrypt.compare(password, usuario.password))) {
       // Mensaje genérico a propósito: no revela si falló el usuario o la contraseña (HU1).
       throw new CredencialesInvalidasError();
     }

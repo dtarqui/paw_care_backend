@@ -1,41 +1,49 @@
 # Backend — PawCare
 
-API REST en Node.js + Express + TypeScript.
+API REST en Node.js + Express + TypeScript, con persistencia real en PostgreSQL (Supabase) vía Prisma. Arquitectura en capas: rutas → controladores → servicios → repositorios — `repositories/` es la única capa que importa el cliente de Prisma (`src/lib/prisma.ts`).
 
-## Modo demo (actual)
-
-Este backend corre hoy en **modo demo**: sin base de datos real, con datos estáticos en memoria (`src/data/`) y una latencia artificial (`DEMO_DELAY_MS`, 700ms por defecto) para que el frontend muestre sus estados de carga como lo haría contra un backend real. La arquitectura en capas (rutas → controladores → servicios → repositorios) es la misma que usará el backend definitivo — solo cambia qué hay detrás del repositorio (arrays en memoria hoy, Prisma + PostgreSQL después).
+## Correr el proyecto
 
 ```bash
-cp .env.example .env   # o edítalo directamente, ya trae valores de demo
+cp .env.example .env   # completa DATABASE_URL y DIRECT_URL con tu proyecto Supabase
+                        # (Project Settings -> Database -> Connection string)
 npm install
-npm run dev             # http://localhost:4000
+npx prisma generate
+npx prisma migrate deploy   # aplica las migraciones existentes (o `migrate dev` en desarrollo)
+npm run db:seed             # siembra los datos de demo (opcional, pero recomendado)
+npm run dev                 # http://localhost:4000
 ```
 
-**Usuarios de demo** (ver `src/data/usuarios.data.ts`):
+`npm run db:reset` borra y recrea todo (migraciones + seed) — útil solo en una base de desarrollo, nunca en producción.
+
+**Usuarios de demo** (creados por `prisma/seed.ts`):
 
 | Usuario | Contraseña | Rol |
 |---|---|---|
 | admin | admin123 | ADMINISTRADOR |
-| veterinario | vet123 | VETERINARIO |
+| veterinario | vet123 | VETERINARIO (Luis Fernández) |
+| carlos.andrade | vet123 | VETERINARIO (Carlos Andrade) |
+| maria.rodriguez | vet123 | VETERINARIO (María Rodríguez) |
 | recepcion | recepcion123 | RECEPCIONISTA |
 
-Endpoints disponibles: `POST /api/auth/login`, `GET /api/dashboard/modulos`, `GET /api/mascotas`, `GET /api/veterinarios`, `GET/POST/PATCH /api/citas*`, `GET/POST /api/pagos*`.
+`GET /health` reporta el estado del servidor y de la conexión a la base de datos (`db.status`, `db.latenciaMs`).
 
-## Camino a producción
+## Estructura
 
-Para reemplazar los datos estáticos por PostgreSQL + Prisma real: ver [TASKS.md](TASKS.md) (cola de tareas por HU) y [prisma/schema.prisma](prisma/schema.prisma) (esquema ya diseñado, ver `database/MODELO_DATOS.md`). La capa de `repositories/` es intencionalmente la única que necesita cambiar — servicios y controladores no deberían tocarse.
-
-Estructura actual:
 ```
 backend/
 ├── TASKS.md
-├── prisma/schema.prisma   Esquema real, listo para cuando se conecte PostgreSQL
+├── prisma/
+│   ├── schema.prisma      Esquema real (ver también database/MODELO_DATOS.md)
+│   ├── migrations/        Historial de migraciones aplicadas
+│   └── seed.ts            Datos de demo (npm run db:seed)
 └── src/
-    ├── data/              "Base de datos" en memoria del modo demo
-    ├── repositories/      Acceso a datos — único lugar a reemplazar por Prisma
-    ├── services/          Lógica de negocio
+    ├── lib/prisma.ts      Cliente de Prisma compartido
+    ├── repositories/      Único lugar que consulta la base de datos
+    ├── services/          Lógica de negocio y reglas del dominio
     ├── controllers/       Traducen HTTP ↔ servicios
-    ├── middlewares/       Auth (JWT + rol), delay simulado, errores centralizados
+    ├── middlewares/       Auth (JWT + rol), latencia simulada opcional, errores centralizados
     └── routes/            Definición de endpoints
 ```
+
+Ver [TASKS.md](TASKS.md) para el detalle de qué HU cubre cada endpoint.

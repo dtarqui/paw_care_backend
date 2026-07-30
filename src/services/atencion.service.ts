@@ -1,5 +1,4 @@
-import { AtencionRegistro } from "../data/atenciones.data";
-import { atencionRepository } from "../repositories/atencion.repository";
+import { AtencionRegistro, atencionRepository } from "../repositories/atencion.repository";
 import { mascotaRepository } from "../repositories/mascota.repository";
 import { veterinarioRepository } from "../repositories/veterinario.repository";
 import { medicamentoService } from "./medicamento.service";
@@ -23,9 +22,12 @@ interface NuevaAtencionInput {
   medicamentos?: { medicamentoId: number; cantidad: number }[];
 }
 
-function hidratar(registro: AtencionRegistro): AtencionMedica {
-  const mascota = mascotaRepository.findById(registro.mascotaId)!;
-  const veterinario = veterinarioRepository.findById(registro.veterinarioId)!;
+async function hidratar(registro: AtencionRegistro): Promise<AtencionMedica> {
+  const mascota = await mascotaRepository.findById(registro.mascotaId);
+  const veterinario = await veterinarioRepository.findById(registro.veterinarioId);
+  if (!mascota || !veterinario) {
+    throw new Error(`Integridad de datos: la atención ${registro.id} referencia mascota o veterinario inexistente`);
+  }
   return {
     id: registro.id,
     mascota: { id: mascota.id, nombre: mascota.nombre, especie: mascota.especie },
@@ -41,14 +43,15 @@ function hidratar(registro: AtencionRegistro): AtencionMedica {
 }
 
 export const atencionService = {
-  historialDeMascota(mascotaId: number): AtencionMedica[] {
-    if (!mascotaRepository.findById(mascotaId)) {
+  async historialDeMascota(mascotaId: number): Promise<AtencionMedica[]> {
+    if (!(await mascotaRepository.findById(mascotaId))) {
       throw new DatosDeAtencionInvalidosError("La mascota no existe");
     }
-    return atencionRepository.findByMascotaId(mascotaId).map(hidratar);
+    const registros = await atencionRepository.findByMascotaId(mascotaId);
+    return Promise.all(registros.map(hidratar));
   },
 
-  crear(input: NuevaAtencionInput): AtencionMedica {
+  async crear(input: NuevaAtencionInput): Promise<AtencionMedica> {
     // Dado que faltan campos obligatorios (diagnóstico/tratamiento), se previene el guardado (HU3).
     if (
       !input.mascotaId ||
@@ -59,32 +62,28 @@ export const atencionService = {
     ) {
       throw new DatosDeAtencionInvalidosError("Tipo de servicio, diagnóstico y tratamiento son obligatorios");
     }
-    if (!mascotaRepository.findById(input.mascotaId) || !veterinarioRepository.findById(input.veterinarioId)) {
+    if (!(await mascotaRepository.findById(input.mascotaId)) || !(await veterinarioRepository.findById(input.veterinarioId))) {
       throw new DatosDeAtencionInvalidosError("Mascota o veterinario inválido");
     }
 
     const medicamentosConsumidos = (input.medicamentos ?? []).filter((m) => m.medicamentoId && m.cantidad > 0);
     // Se valida el stock ANTES de crear la atención, para no dejar un registro huérfano si falta stock (HU9).
     if (medicamentosConsumidos.length > 0) {
-      medicamentoService.validarDisponibilidad(medicamentosConsumidos);
+      await medicamentoService.validarDisponibilidad(medicamentosConsumidos);
     }
 
-    const registro: AtencionRegistro = {
-      id: atencionRepository.nextId(),
+    const registro = await atencionRepository.create({
       mascotaId: input.mascotaId,
       veterinarioId: input.veterinarioId,
-      fecha: new Date().toISOString(),
       tipoServicio: input.tipoServicio.trim(),
       diagnostico: input.diagnostico.trim(),
       tratamiento: input.tratamiento.trim(),
       examenesExternos: input.examenesExternos?.trim() ?? "",
       montoConsulta: Number(input.montoConsulta) || 0,
-      estadoPago: "PENDIENTE", // queda disponible para cobrar en el módulo de Pagos (HU4)
-    };
-    atencionRepository.create(registro);
+    });
 
     if (medicamentosConsumidos.length > 0) {
-      medicamentoService.consumirParaAtencion(registro.id, medicamentosConsumidos);
+      await medicamentoService.consumirParaAtencion(registro.id, medicamentosConsumidos);
     }
 
     return hidratar(registro);

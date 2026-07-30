@@ -1,6 +1,7 @@
 import { atencionRepository } from "../repositories/atencion.repository";
 import { mascotaRepository } from "../repositories/mascota.repository";
 import { pagoRepository } from "../repositories/pago.repository";
+import { veterinarioRepository } from "../repositories/veterinario.repository";
 import { MetodoPago } from "../types";
 
 export interface FiltrosReporte {
@@ -45,27 +46,30 @@ function dentroDeRango(fechaISO: string, desde?: string, hasta?: string): boolea
   return true;
 }
 
-function pagosDetallados(): PagoDetalle[] {
-  return pagoRepository.findAllRaw().map((pago) => {
-    const atencion = atencionRepository.findById(pago.atencionId)!;
-    const mascota = mascotaRepository.findById(atencion.mascotaId)!;
-    return {
-      id: pago.id,
-      atencionId: pago.atencionId,
-      metodoPago: pago.metodoPago,
-      monto: pago.monto,
-      fecha: pago.fecha,
-      tipoServicio: atencion.tipoServicio,
-      mascota: mascota.nombre,
-      propietario: `${mascota.propietario.nombre} ${mascota.propietario.apellidoPaterno}`,
-    };
-  });
+async function pagosDetallados(): Promise<PagoDetalle[]> {
+  const pagos = await pagoRepository.findAllRaw();
+  return Promise.all(
+    pagos.map(async (pago) => {
+      const atencion = (await atencionRepository.findById(pago.atencionId))!;
+      const mascota = (await mascotaRepository.findById(atencion.mascotaId))!;
+      return {
+        id: pago.id,
+        atencionId: pago.atencionId,
+        metodoPago: pago.metodoPago,
+        monto: pago.monto,
+        fecha: pago.fecha,
+        tipoServicio: atencion.tipoServicio,
+        mascota: mascota.nombre,
+        propietario: `${mascota.propietario.nombre} ${mascota.propietario.apellidoPaterno}`,
+      };
+    })
+  );
 }
 
 export const reporteService = {
   /** HU7 — reporte de ingresos con filtros y totales. */
-  ingresos(filtros: FiltrosReporte) {
-    let pagos = pagosDetallados().filter((p) => dentroDeRango(p.fecha, filtros.desde, filtros.hasta));
+  async ingresos(filtros: FiltrosReporte) {
+    let pagos = (await pagosDetallados()).filter((p) => dentroDeRango(p.fecha, filtros.desde, filtros.hasta));
     if (filtros.tipoServicio) pagos = pagos.filter((p) => p.tipoServicio === filtros.tipoServicio);
     if (filtros.metodoPago) pagos = pagos.filter((p) => p.metodoPago === filtros.metodoPago);
 
@@ -76,28 +80,29 @@ export const reporteService = {
   },
 
   /** HU8 — listado de atenciones por período. */
-  atencionesPorPeriodo(filtros: FiltrosReporte): AtencionResumen[] {
-    return atencionRepository
-      .findAll()
-      .filter((a) => dentroDeRango(a.fecha, filtros.desde, filtros.hasta))
-      .map((a) => {
-        const mascota = mascotaRepository.findById(a.mascotaId)!;
+  async atencionesPorPeriodo(filtros: FiltrosReporte): Promise<AtencionResumen[]> {
+    const atenciones = (await atencionRepository.findAll()).filter((a) => dentroDeRango(a.fecha, filtros.desde, filtros.hasta));
+    return Promise.all(
+      atenciones.map(async (a) => {
+        const mascota = (await mascotaRepository.findById(a.mascotaId))!;
+        const veterinario = await veterinarioRepository.findById(a.veterinarioId);
         return {
           id: a.id,
           fecha: a.fecha,
           mascota: mascota.nombre,
           propietario: `${mascota.propietario.nombre} ${mascota.propietario.apellidoPaterno}`,
-          veterinario: "", // se completa en el controller si se necesita; se omite acá para no duplicar el repo de veterinarios
+          veterinario: veterinario ? `${veterinario.nombre} ${veterinario.apellidoPaterno}` : "",
           tipoServicio: a.tipoServicio,
           montoConsulta: a.montoConsulta,
           estadoPago: a.estadoPago,
         };
-      });
+      })
+    );
   },
 
   /** HU8 — ingresos agrupados por tipo de servicio, para el gráfico. */
-  ingresosPorServicio(filtros: FiltrosReporte): GrupoPorServicio[] {
-    const pagos = pagosDetallados().filter((p) => dentroDeRango(p.fecha, filtros.desde, filtros.hasta));
+  async ingresosPorServicio(filtros: FiltrosReporte): Promise<GrupoPorServicio[]> {
+    const pagos = (await pagosDetallados()).filter((p) => dentroDeRango(p.fecha, filtros.desde, filtros.hasta));
     const grupos = new Map<string, GrupoPorServicio>();
     for (const pago of pagos) {
       const grupo = grupos.get(pago.tipoServicio) ?? { tipoServicio: pago.tipoServicio, cantidad: 0, monto: 0 };

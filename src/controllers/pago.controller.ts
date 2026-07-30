@@ -5,7 +5,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 
 export const pagoController = {
   listarPendientes: asyncHandler(async (_req: Request, res: Response) => {
-    res.json({ pendientes: pagoService.listarPendientes() });
+    res.json({ pendientes: await pagoService.listarPendientes() });
   }),
 
   registrar: asyncHandler(async (req: Request, res: Response) => {
@@ -17,7 +17,7 @@ export const pagoController = {
     if (!atencionId || !metodoPago) {
       return res.status(400).json({ error: "atencionId y metodoPago son obligatorios" });
     }
-    const pago = pagoService.registrar(atencionId, metodoPago, Number(monto));
+    const pago = await pagoService.registrar(atencionId, metodoPago, Number(monto));
     res.status(201).json({ pago });
   }),
 };

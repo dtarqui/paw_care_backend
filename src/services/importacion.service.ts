@@ -37,13 +37,16 @@ export const importacionService = {
       throw new DatosDeImportacionInvalidosError("El archivo no tiene ninguna hoja");
     }
 
+    const filas: { numeroFila: number; valores: unknown[] }[] = [];
+    sheet.eachRow((row, numeroFila) => {
+      if (numeroFila === 1) return; // encabezado
+      filas.push({ numeroFila, valores: row.values as unknown[] });
+    });
+
     const errores: FilaConError[] = [];
     let importados = 0;
 
-    sheet.eachRow((row, numeroFila) => {
-      if (numeroFila === 1) return; // encabezado
-
-      const valores = row.values as unknown[];
+    for (const { numeroFila, valores } of filas) {
       const nombre = valores[1] ? String(valores[1]).trim() : "";
       const apellidoPaterno = valores[2] ? String(valores[2]).trim() : "";
       const ci = valores[4] ? String(valores[4]).trim() : "";
@@ -57,37 +60,28 @@ export const importacionService = {
           fila: numeroFila,
           motivo: "Faltan campos obligatorios (nombre, apellido paterno, CI, mascota, especie)",
         });
-        return;
+        continue;
       }
 
-      let propietario = propietarioRepository.findByCi(ci);
+      let propietario = await propietarioRepository.findByCi(ci);
       if (!propietario) {
-        propietario = propietarioRepository.create({
-          id: propietarioRepository.nextId(),
-          nombre,
-          apellidoPaterno,
-          ci,
-          telefono,
-        });
+        propietario = await propietarioRepository.create({ nombre, apellidoPaterno, ci, telefono });
       }
 
-      if (mascotaRepository.existeParaPropietario(propietario.id, mascotaNombre, mascotaEspecie)) {
+      if (await mascotaRepository.existeParaPropietario(propietario.id, mascotaNombre, mascotaEspecie)) {
         errores.push({ fila: numeroFila, motivo: `La mascota "${mascotaNombre}" ya existe para este propietario` });
-        return;
+        continue;
       }
 
-      mascotaRepository.create({
-        id: mascotaRepository.nextId(),
+      await mascotaRepository.create({
         propietarioId: propietario.id,
         nombre: mascotaNombre,
         especie: mascotaEspecie,
         raza: mascotaRaza,
         sexo: "Macho",
-        fechaNacimiento: "",
-        peso: 0,
       });
       importados++;
-    });
+    }
 
     return { importados, errores };
   },

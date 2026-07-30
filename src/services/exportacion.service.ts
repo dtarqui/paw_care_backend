@@ -18,8 +18,20 @@ function hoja(workbook: ExcelJS.Workbook, nombre: string, columnas: Partial<Exce
 
 /** HU15 — un archivo con una hoja por entidad, para que el dueño de la clínica
  * pueda llevarse todos sus datos en cualquier momento (sin depender del proveedor). */
-export function generarExportacionCompleta(): ExcelJS.Workbook {
+export async function generarExportacionCompleta(): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
+
+  const [usuarios, veterinarios, propietarios, mascotas, citas, atenciones, pagos, controles, medicamentos] = await Promise.all([
+    usuarioRepository.findAll(),
+    veterinarioRepository.findAll(),
+    propietarioRepository.findAll(),
+    mascotaRepository.findAll(),
+    citaRepository.findAll(),
+    atencionRepository.findAll(),
+    pagoRepository.findAllRaw(),
+    controlPreventivoRepository.findAll(),
+    medicamentoRepository.findAll(),
+  ]);
 
   hoja(
     workbook,
@@ -33,7 +45,7 @@ export function generarExportacionCompleta(): ExcelJS.Workbook {
       { header: "Rol", key: "rol", width: 16 },
       { header: "Estado", key: "estado", width: 12 },
     ],
-    usuarioRepository.findAll().map((u) => ({
+    usuarios.map((u) => ({
       id: u.id,
       nombre: u.nombre,
       apellidoPaterno: u.apellidoPaterno,
@@ -54,7 +66,7 @@ export function generarExportacionCompleta(): ExcelJS.Workbook {
       { header: "Matrícula", key: "matricula", width: 14 },
       { header: "Especialidad", key: "especialidad", width: 22 },
     ],
-    veterinarioRepository.findAll()
+    veterinarios
   );
 
   hoja(
@@ -67,7 +79,7 @@ export function generarExportacionCompleta(): ExcelJS.Workbook {
       { header: "CI", key: "ci", width: 14 },
       { header: "Teléfono", key: "telefono", width: 14 },
     ],
-    propietarioRepository.findAll()
+    propietarios
   );
 
   hoja(
@@ -81,7 +93,7 @@ export function generarExportacionCompleta(): ExcelJS.Workbook {
       { header: "Sexo", key: "sexo", width: 10 },
       { header: "Propietario", key: "propietario", width: 25 },
     ],
-    mascotaRepository.findAll().map((m) => ({
+    mascotas.map((m) => ({
       id: m.id,
       nombre: m.nombre,
       especie: m.especie,
@@ -102,7 +114,7 @@ export function generarExportacionCompleta(): ExcelJS.Workbook {
       { header: "Tipo", key: "tipoConsulta", width: 18 },
       { header: "Estado", key: "estado", width: 14 },
     ],
-    citaRepository.findAll().map((c) => ({
+    citas.map((c) => ({
       codigo: c.codigo,
       fechaHora: `${c.fechaHora.slice(0, 10)} ${c.fechaHora.slice(11, 16)}`,
       mascota: c.mascota.nombre,
@@ -111,6 +123,9 @@ export function generarExportacionCompleta(): ExcelJS.Workbook {
       estado: c.estado,
     }))
   );
+
+  const mascotaPorId = new Map(mascotas.map((m) => [m.id, m]));
+  const veterinarioPorId = new Map(veterinarios.map((v) => [v.id, v]));
 
   hoja(
     workbook,
@@ -124,13 +139,13 @@ export function generarExportacionCompleta(): ExcelJS.Workbook {
       { header: "Monto (Bs.)", key: "montoConsulta", width: 14 },
       { header: "Estado de pago", key: "estadoPago", width: 16 },
     ],
-    atencionRepository.findAll().map((a) => {
-      const mascota = mascotaRepository.findById(a.mascotaId)!;
-      const veterinario = veterinarioRepository.findById(a.veterinarioId)!;
+    atenciones.map((a) => {
+      const mascota = mascotaPorId.get(a.mascotaId);
+      const veterinario = veterinarioPorId.get(a.veterinarioId);
       return {
         fecha: a.fecha.slice(0, 10),
-        mascota: mascota.nombre,
-        veterinario: `${veterinario.nombre} ${veterinario.apellidoPaterno}`,
+        mascota: mascota?.nombre ?? "—",
+        veterinario: veterinario ? `${veterinario.nombre} ${veterinario.apellidoPaterno}` : "—",
         tipoServicio: a.tipoServicio,
         diagnostico: a.diagnostico,
         montoConsulta: a.montoConsulta,
@@ -148,7 +163,7 @@ export function generarExportacionCompleta(): ExcelJS.Workbook {
       { header: "Monto (Bs.)", key: "monto", width: 14 },
       { header: "Fecha", key: "fecha", width: 14 },
     ],
-    pagoRepository.findAllRaw().map((p) => ({
+    pagos.map((p) => ({
       atencionId: p.atencionId,
       metodoPago: p.metodoPago,
       monto: p.monto,
@@ -165,8 +180,8 @@ export function generarExportacionCompleta(): ExcelJS.Workbook {
       { header: "Fecha aplicación", key: "fechaAplicacion", width: 16 },
       { header: "Próxima dosis", key: "proximaDosis", width: 16 },
     ],
-    controlPreventivoRepository.findAll().map((c) => ({
-      mascota: mascotaRepository.findById(c.mascotaId)?.nombre ?? "—",
+    controles.map((c) => ({
+      mascota: mascotaPorId.get(c.mascotaId)?.nombre ?? "—",
       tipo: c.tipo,
       fechaAplicacion: c.fechaAplicacion,
       proximaDosis: c.proximaDosis,
@@ -181,7 +196,7 @@ export function generarExportacionCompleta(): ExcelJS.Workbook {
       { header: "Stock actual", key: "stockActual", width: 14 },
       { header: "Stock mínimo", key: "stockMinimo", width: 14 },
     ],
-    medicamentoRepository.findAll()
+    medicamentos
   );
 
   return workbook;

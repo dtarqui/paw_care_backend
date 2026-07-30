@@ -21,38 +21,32 @@ export interface ItemMedicamentoConsumido {
 }
 
 export const medicamentoService = {
-  listar(): Medicamento[] {
+  listar(): Promise<Medicamento[]> {
     return medicamentoRepository.findAll();
   },
 
-  bajoStock(): Medicamento[] {
+  bajoStock(): Promise<Medicamento[]> {
     return medicamentoRepository.findBajoStock();
   },
 
-  registrarEntrada(medicamentoId: number, cantidad: number): Medicamento {
+  async registrarEntrada(medicamentoId: number, cantidad: number): Promise<Medicamento> {
     if (!cantidad || cantidad <= 0) {
       throw new DatosDeMedicamentoInvalidosError("La cantidad debe ser mayor a 0");
     }
-    const medicamento = medicamentoRepository.findById(medicamentoId);
+    const medicamento = await medicamentoRepository.findById(medicamentoId);
     if (!medicamento) {
       throw new DatosDeMedicamentoInvalidosError("El medicamento no existe");
     }
 
-    medicamentoRepository.ajustarStock(medicamentoId, cantidad);
-    medicamentoRepository.registrarMovimiento({
-      id: medicamentoRepository.nextMovimientoId(),
-      medicamentoId,
-      tipo: "ENTRADA",
-      cantidad,
-      fecha: new Date().toISOString(),
-    });
-    return medicamentoRepository.findById(medicamentoId)!;
+    await medicamentoRepository.ajustarStock(medicamentoId, cantidad);
+    await medicamentoRepository.registrarMovimiento({ medicamentoId, tipo: "ENTRADA", cantidad });
+    return (await medicamentoRepository.findById(medicamentoId))!;
   },
 
   /** Usado por atencion.service al guardar una atención que consumió medicamentos. */
-  validarDisponibilidad(items: ItemMedicamentoConsumido[]): void {
+  async validarDisponibilidad(items: ItemMedicamentoConsumido[]): Promise<void> {
     for (const item of items) {
-      const medicamento = medicamentoRepository.findById(item.medicamentoId);
+      const medicamento = await medicamentoRepository.findById(item.medicamentoId);
       if (!medicamento) {
         throw new DatosDeMedicamentoInvalidosError(`El medicamento ${item.medicamentoId} no existe`);
       }
@@ -62,15 +56,13 @@ export const medicamentoService = {
     }
   },
 
-  consumirParaAtencion(atencionId: number, items: ItemMedicamentoConsumido[]): void {
+  async consumirParaAtencion(atencionId: number, items: ItemMedicamentoConsumido[]): Promise<void> {
     for (const item of items) {
-      medicamentoRepository.ajustarStock(item.medicamentoId, -item.cantidad);
-      medicamentoRepository.registrarMovimiento({
-        id: medicamentoRepository.nextMovimientoId(),
+      await medicamentoRepository.ajustarStock(item.medicamentoId, -item.cantidad);
+      await medicamentoRepository.registrarMovimiento({
         medicamentoId: item.medicamentoId,
         tipo: "SALIDA",
         cantidad: item.cantidad,
-        fecha: new Date().toISOString(),
         atencionId,
       });
     }

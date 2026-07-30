@@ -182,6 +182,7 @@ model AtencionMedica {
   diagnostico      String
   tratamiento      String
   examenesExternos String?
+  tipoServicio     String
   montoConsulta    Decimal            @db.Decimal(10, 2)
   estadoPago       EstadoPagoAtencion @default(PENDIENTE)
   createdAt        DateTime           @default(now())
@@ -192,6 +193,7 @@ model AtencionMedica {
 
   @@index([mascotaId, fecha])
   @@index([estadoPago])
+  @@index([tipoServicio, fecha])
 }
 
 model Pago {

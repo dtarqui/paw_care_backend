@@ -5,6 +5,13 @@ import { notificacionRepository } from "../repositories/notificacion.repository"
 import { RecordatorioPendiente } from "../types";
 import { addDays, ahoraLiteral, sumarHoras, todayISO } from "../utils/date";
 
+export class RecordatorioNoEncontradoError extends Error {
+  constructor() {
+    super("El recordatorio solicitado no existe");
+    this.name = "RecordatorioNoEncontradoError";
+  }
+}
+
 function mensajeCita(mascotaNombre: string, fechaHora: string): string {
   const [fecha, hora] = fechaHora.split("T");
   const [yyyy, mm, dd] = fecha.split("-");
@@ -20,24 +27,22 @@ function mensajeControl(mascotaNombre: string, tipo: string, proximaDosis: strin
 export const recordatorioService = {
   // HU10/HU11 Track A: recordatorios de citas en las próximas 24h + controles
   // preventivos que vencen en 7 días, excluyendo los ya marcados como enviados.
-  pendientes(): RecordatorioPendiente[] {
+  async pendientes(): Promise<RecordatorioPendiente[]> {
     const ahora = ahoraLiteral();
     const limite24h = sumarHoras(ahora, 24);
     const resultado: RecordatorioPendiente[] = [];
 
-    for (const cita of citaRepository.findAll()) {
+    for (const cita of await citaRepository.findAll()) {
       if (cita.estado !== "CONFIRMADA") continue;
       const marca = cita.fechaHora.slice(0, 16);
       if (marca < ahora || marca > limite24h) continue;
+      if (await notificacionRepository.yaEnviadoParaCita(cita.id)) continue;
 
-      const id = `CITA-${cita.id}`;
-      if (notificacionRepository.yaEnviado(id)) continue;
-
-      const mascota = mascotaRepository.findById(cita.mascota.id);
+      const mascota = await mascotaRepository.findById(cita.mascota.id);
       if (!mascota) continue;
 
       resultado.push({
-        id,
+        id: `CITA-${cita.id}`,
         tipo: "CITA",
         propietario: {
           telefono: mascota.propietario.telefono,
@@ -50,18 +55,16 @@ export const recordatorioService = {
     }
 
     const limiteControl = addDays(todayISO(), 7);
-    for (const control of controlPreventivoRepository.findAll()) {
+    for (const control of await controlPreventivoRepository.findAll()) {
       if (!control.proximaDosis) continue;
       if (control.proximaDosis < todayISO() || control.proximaDosis > limiteControl) continue;
+      if (await notificacionRepository.yaEnviadoParaControl(control.id)) continue;
 
-      const id = `CONTROL-${control.id}`;
-      if (notificacionRepository.yaEnviado(id)) continue;
-
-      const mascota = mascotaRepository.findById(control.mascotaId);
+      const mascota = await mascotaRepository.findById(control.mascotaId);
       if (!mascota) continue;
 
       resultado.push({
-        id,
+        id: `CONTROL-${control.id}`,
         tipo: "CONTROL_PREVENTIVO",
         propietario: {
           telefono: mascota.propietario.telefono,
@@ -76,7 +79,32 @@ export const recordatorioService = {
     return resultado;
   },
 
-  marcarEnviado(id: string): void {
-    notificacionRepository.marcarEnviado(id);
+  async marcarEnviado(id: string): Promise<void> {
+    const [tipo, referenciaIdRaw] = id.split("-");
+    const referenciaId = Number(referenciaIdRaw);
+
+    if (tipo === "CITA") {
+      const cita = await citaRepository.findById(referenciaId);
+      if (!cita) throw new RecordatorioNoEncontradoError();
+      const mascota = await mascotaRepository.findById(cita.mascota.id);
+      if (!mascota) throw new RecordatorioNoEncontradoError();
+      await notificacionRepository.marcarEnviadoCita(cita.id, mascota.propietario.id, mensajeCita(mascota.nombre, cita.fechaHora));
+      return;
+    }
+
+    if (tipo === "CONTROL") {
+      const control = await controlPreventivoRepository.findById(referenciaId);
+      if (!control) throw new RecordatorioNoEncontradoError();
+      const mascota = await mascotaRepository.findById(control.mascotaId);
+      if (!mascota) throw new RecordatorioNoEncontradoError();
+      await notificacionRepository.marcarEnviadoControl(
+        control.id,
+        mascota.propietario.id,
+        mensajeControl(mascota.nombre, control.tipo, control.proximaDosis)
+      );
+      return;
+    }
+
+    throw new RecordatorioNoEncontradoError();
   },
 };

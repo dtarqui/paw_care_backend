@@ -1,25 +1,43 @@
-import { propietarios } from "../data/propietarios.data";
+import { prisma } from "../lib/prisma";
 import { Propietario } from "../types";
 
+type PropietarioRow = NonNullable<Awaited<ReturnType<typeof prisma.propietario.findUnique>>>;
+
+function aDominio(row: PropietarioRow): Propietario {
+  return {
+    id: row.id,
+    nombre: row.nombre,
+    apellidoPaterno: row.apellidoPaterno,
+    ci: row.ci,
+    telefono: row.telefono ?? "",
+  };
+}
+
+export interface NuevoPropietarioRegistro {
+  nombre: string;
+  apellidoPaterno: string;
+  ci: string;
+  telefono?: string;
+}
+
 export const propietarioRepository = {
-  findAll(): Propietario[] {
-    return propietarios;
+  async findAll(): Promise<Propietario[]> {
+    const rows = await prisma.propietario.findMany({ orderBy: { id: "asc" } });
+    return rows.map(aDominio);
   },
 
-  findById(id: number): Propietario | undefined {
-    return propietarios.find((p) => p.id === id);
+  async findById(id: number): Promise<Propietario | undefined> {
+    const row = await prisma.propietario.findUnique({ where: { id } });
+    return row ? aDominio(row) : undefined;
   },
 
-  findByCi(ci: string): Propietario | undefined {
-    return propietarios.find((p) => p.ci === ci);
+  async findByCi(ci: string): Promise<Propietario | undefined> {
+    const row = await prisma.propietario.findUnique({ where: { ci } });
+    return row ? aDominio(row) : undefined;
   },
 
-  create(propietario: Propietario): Propietario {
-    propietarios.push(propietario);
-    return propietario;
-  },
-
-  nextId(): number {
-    return Math.max(0, ...propietarios.map((p) => p.id)) + 1;
+  async create(input: NuevoPropietarioRegistro): Promise<Propietario> {
+    const row = await prisma.propietario.create({ data: input });
+    return aDominio(row);
   },
 };

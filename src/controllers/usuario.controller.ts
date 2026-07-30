@@ -4,11 +4,11 @@ import { asyncHandler } from "../utils/asyncHandler";
 
 export const usuarioController = {
   listar: asyncHandler(async (_req: Request, res: Response) => {
-    res.json({ usuarios: usuarioService.listar() });
+    res.json({ usuarios: await usuarioService.listar() });
   }),
 
   crear: asyncHandler(async (req: Request, res: Response) => {
-    const usuario = usuarioService.crear(req.body);
+    const usuario = await usuarioService.crear(req.body);
     res.status(201).json({ usuario });
   }),
 };

@@ -10,9 +10,9 @@
 
 ## Progreso
 
-> **Nota de arquitectura:** estas tareas se cumplieron en **modo demo** — misma arquitectura en capas (routes → controllers → services → repositories) descrita abajo, pero `repositories/` lee de arrays en memoria (`src/data/*.ts`) en vez de Prisma/PostgreSQL. Migrar a la base de datos real (Tarea 00 tal como está escrita, con `prisma migrate`) queda pendiente; cuando se haga, solo debería tocarse la capa `repositories/`.
+> **Nota de arquitectura (actualizada):** el backend ya corre sobre **Prisma + PostgreSQL (Supabase)**, no sobre datos en memoria. Misma arquitectura en capas (routes → controllers → services → repositories); `repositories/` es la única capa que importa `../lib/prisma`, tal como estaba planeado desde el modo demo — la migración solo tocó esa capa (y volvió `async` a cada service/controller que la usa). `src/data/*.ts` ya no existe. Semilla de datos demo: `npm run db:seed` (o `npm run db:reset` para recrear todo desde cero). Ver también la nota de contraseñas más abajo.
 
-- [x] Tarea 00 — Setup del backend — **parcial**: estructura en capas y andamiaje listos; falta migrar de datos en memoria a Prisma/PostgreSQL real
+- [x] Tarea 00 — Setup del backend — completo: estructura en capas, Prisma conectado a Supabase, migraciones aplicadas (`prisma/migrations/`)
 - [x] Tarea 01 — HU1: Autenticación y Roles — incluye además `GET/POST /api/usuarios` (listado y alta, con creación automática del `Veterinario` vinculado cuando el rol lo requiere)
 - [x] Tarea 02 — HU2: Registro de Mascotas y Cliente — incluye `GET /api/propietarios/buscar`
 - [x] Tarea 03 — HU3: Gestionar Atención Médica — `GET /api/mascotas/buscar`, `GET /api/mascotas/:id/atenciones`, `POST /api/atenciones`
@@ -33,7 +33,15 @@
 
 **Restricción de negocio agregada (no estaba en el prompt original de HU5):** un usuario con rol Veterinario solo puede crear o reprogramar citas para sí mismo — Administrador y Recepcionista pueden hacerlo para cualquier veterinario. Implementado en `cita.service.ts` (`AgendaAjenaError`, 403), usando el vínculo `Veterinario.usuarioId`. La misma idea se reutilizó para bloquear el selector de veterinario en Nueva Atención (HU3) en el frontend.
 
-**Cambio de modelo no previsto en el prompt original:** `AtencionMedica` ganó un campo `tipoServicio` (mismo catálogo que `Cita.tipoConsulta`) — sin él, HU7/HU8 no tenían cómo agrupar ingresos "por tipo de servicio". Ya se propagó a `database/MODELO_DATOS.md` (tabla de campos, bloque Prisma e índice `(tipoServicio, fecha)`).
+**Cambio de modelo no previsto en el prompt original:** `AtencionMedica` ganó un campo `tipoServicio` (mismo catálogo que `Cita.tipoConsulta`) — sin él, HU7/HU8 no tenían cómo agrupar ingresos "por tipo de servicio". Ya se propagó a `database/MODELO_DATOS.md` y a `prisma/schema.prisma` (tabla de campos, bloque Prisma e índice `(tipoServicio, fecha)`).
+
+**Cambio de modelo no previsto en el prompt original (2):** el esquema real exige que todo `Veterinario` tenga una cuenta `Usuario` propia (`usuarioId` único y obligatorio — así estaba documentado, pero el modo demo solo le daba cuenta a uno de los tres). Ahora los 3 veterinarios sembrados tienen login: `veterinario/vet123` (Luis, como antes), y además `carlos.andrade/vet123` y `maria.rodriguez/vet123`.
+
+**Autenticación real:** `Usuario.passwordHash` ahora es un hash de `bcryptjs` (no texto plano). `auth.service.ts` compara con `bcrypt.compare`; `usuario.repository.ts` hashea al crear. Las contraseñas demo (`admin123`, `vet123`, `recepcion123`) se mantienen solo como valores de siembra, nunca se guardan en claro.
+
+**Conexión a Supabase:** `backend/.env` define `DATABASE_URL` (pooler, puerto 6543, `pgbouncer=true`) y `DIRECT_URL` (conexión directa, puerto 5432, usada por `prisma migrate`). `GET /health` reporta el estado real de la conexión (`db.status`, `db.latenciaMs`) además de uptime.
+
+**Fechas en columnas `@db.Date` (sin hora):** Prisma normaliza `Mascota.fechaNacimiento`, `ControlPreventivo.fechaAplicacion` y `.proximaDosis` a medianoche UTC del calendario guardado, sin importar la zona horaria del proceso — a diferencia de los `DateTime` normales (`Cita.fechaHora`, `AtencionMedica.fecha`, etc.), que se tratan con getters/constructores LOCALES en todo el resto del código (ver `utils/date.ts`). Por eso existen dos pares de helpers: `literalToDate`/`dateToLiteral` (locales, para `DateTime`) y `literalDateOnlyToDate`/`dateOnlyToLiteral` (UTC, exclusivos para `@db.Date`). Mezclarlos corre la fecha un día — quedó cubierto en `mascota.repository.ts` y `controlPreventivo.repository.ts`.
 
 *(HU14 — PWA instalable — no requiere trabajo de backend; ver `frontend/TASKS.md`.)*
 

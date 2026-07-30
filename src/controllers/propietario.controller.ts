@@ -8,7 +8,7 @@ export const propietarioController = {
     if (!ci) {
       return res.status(400).json({ error: "El parámetro ci es obligatorio" });
     }
-    const propietario = propietarioService.buscarPorCi(ci);
+    const propietario = await propietarioService.buscarPorCi(ci);
     res.json({ propietario: propietario ?? null });
   }),
 };

@@ -1,37 +1,61 @@
-import { PagoRegistro, pagos } from "../data/pagos.data";
-import { PagoPendiente } from "../types";
-import { atencionRepository } from "./atencion.repository";
-import { mascotaRepository } from "./mascota.repository";
+import { prisma } from "../lib/prisma";
+import { MetodoPago, PagoPendiente } from "../types";
+import { dateToLiteral } from "../utils/date";
+
+export interface PagoRegistro {
+  id: number;
+  atencionId: number;
+  metodoPago: MetodoPago;
+  monto: number;
+  fecha: string;
+}
+
+type PagoRow = NonNullable<Awaited<ReturnType<typeof prisma.pago.findUnique>>>;
+
+function aDominio(row: PagoRow): PagoRegistro {
+  return {
+    id: row.id,
+    atencionId: row.atencionId,
+    metodoPago: row.metodoPago,
+    monto: Number(row.monto),
+    fecha: dateToLiteral(row.fecha),
+  };
+}
+
+export interface NuevoPagoRegistro {
+  atencionId: number;
+  metodoPago: MetodoPago;
+  monto: number;
+}
 
 export const pagoRepository = {
-  findPendientes(): PagoPendiente[] {
-    return atencionRepository.findPendientes().map((atencion) => {
-      const mascota = mascotaRepository.findById(atencion.mascotaId)!;
-      return {
-        atencionId: atencion.id,
-        mascota: { id: mascota.id, nombre: mascota.nombre },
-        propietario: {
-          id: mascota.propietario.id,
-          nombre: mascota.propietario.nombre,
-          apellidoPaterno: mascota.propietario.apellidoPaterno,
-        },
-        motivoConsulta: atencion.diagnostico,
-        monto: atencion.montoConsulta,
-        fecha: atencion.fecha,
-      };
+  async findPendientes(): Promise<PagoPendiente[]> {
+    const atenciones = await prisma.atencionMedica.findMany({
+      where: { estadoPago: "PENDIENTE" },
+      include: { mascota: { include: { propietario: true } } },
+      orderBy: { fecha: "asc" },
     });
+    return atenciones.map((atencion) => ({
+      atencionId: atencion.id,
+      mascota: { id: atencion.mascota.id, nombre: atencion.mascota.nombre },
+      propietario: {
+        id: atencion.mascota.propietario.id,
+        nombre: atencion.mascota.propietario.nombre,
+        apellidoPaterno: atencion.mascota.propietario.apellidoPaterno,
+      },
+      motivoConsulta: atencion.diagnostico,
+      monto: Number(atencion.montoConsulta),
+      fecha: dateToLiteral(atencion.fecha),
+    }));
   },
 
-  findAllRaw(): PagoRegistro[] {
-    return [...pagos].sort((a, b) => b.fecha.localeCompare(a.fecha));
+  async findAllRaw(): Promise<PagoRegistro[]> {
+    const rows = await prisma.pago.findMany({ orderBy: { fecha: "desc" } });
+    return rows.map(aDominio);
   },
 
-  registrar(registro: PagoRegistro): PagoRegistro {
-    pagos.push(registro);
-    return registro;
-  },
-
-  nextId(): number {
-    return Math.max(0, ...pagos.map((p) => p.id)) + 1;
+  async registrar(input: NuevoPagoRegistro): Promise<PagoRegistro> {
+    const row = await prisma.pago.create({ data: input });
+    return aDominio(row);
   },
 };

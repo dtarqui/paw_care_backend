@@ -4,6 +4,6 @@ import { asyncHandler } from "../utils/asyncHandler";
 
 export const veterinarioController = {
   listar: asyncHandler(async (_req: Request, res: Response) => {
-    res.json({ veterinarios: veterinarioService.listar() });
+    res.json({ veterinarios: await veterinarioService.listar() });
   }),
 };
