@@ -18,6 +18,7 @@ interface NuevaAtencionInput {
   diagnostico: string;
   tratamiento: string;
   examenesExternos?: string;
+  peso?: number;
   montoConsulta: number;
   medicamentos?: { medicamentoId: number; cantidad: number }[];
 }
@@ -37,6 +38,7 @@ async function hidratar(registro: AtencionRegistro): Promise<AtencionMedica> {
     diagnostico: registro.diagnostico,
     tratamiento: registro.tratamiento,
     examenesExternos: registro.examenesExternos,
+    peso: registro.peso,
     montoConsulta: registro.montoConsulta,
     estadoPago: registro.estadoPago,
   };
@@ -72,6 +74,8 @@ export const atencionService = {
       await medicamentoService.validarDisponibilidad(medicamentosConsumidos);
     }
 
+    const peso = input.peso && input.peso > 0 ? Number(input.peso) : undefined;
+
     const registro = await atencionRepository.create({
       mascotaId: input.mascotaId,
       veterinarioId: input.veterinarioId,
@@ -79,11 +83,19 @@ export const atencionService = {
       diagnostico: input.diagnostico.trim(),
       tratamiento: input.tratamiento.trim(),
       examenesExternos: input.examenesExternos?.trim() ?? "",
+      peso,
       montoConsulta: Number(input.montoConsulta) || 0,
     });
 
     if (medicamentosConsumidos.length > 0) {
       await medicamentoService.consumirParaAtencion(registro.id, medicamentosConsumidos);
+    }
+
+    // El peso tomado en la visita queda como el "peso actual" de la ficha de la
+    // mascota — sin generar una fila en CambioMascota (ya es visible en esta
+    // atención dentro del historial; ver mascota.service.ts).
+    if (peso !== undefined) {
+      await mascotaRepository.actualizar(input.mascotaId, { peso });
     }
 
     return hidratar(registro);

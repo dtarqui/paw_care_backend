@@ -83,6 +83,7 @@ export interface AtencionMedica {
   diagnostico: string;
   tratamiento: string;
   examenesExternos?: string;
+  peso?: number;
   montoConsulta: number;
   estadoPago: EstadoPagoAtencion;
 }
@@ -127,3 +128,21 @@ export interface RecordatorioPendiente {
   mensaje: string;
   referencia: string; // ej. nombre de mascota + fecha, para mostrar en la UI
 }
+
+export interface CambioMascota {
+  id: number;
+  campo: string;
+  valorAnterior?: string;
+  valorNuevo?: string;
+  fecha: string;
+  usuario?: string; // nombre completo de quien hizo el cambio, si la cuenta sigue existiendo
+}
+
+// Ficha individual de mascota: línea de tiempo unificada (atenciones, controles
+// preventivos, citas y ediciones manuales), cada evento resuelto a su tipo real
+// para que el frontend no tenga que adivinar la forma del payload.
+export type EventoHistorialMascota =
+  | { tipo: "ATENCION"; fecha: string; atencion: AtencionMedica }
+  | { tipo: "CONTROL"; fecha: string; control: ControlPreventivo }
+  | { tipo: "CITA"; fecha: string; cita: Cita }
+  | { tipo: "CAMBIO"; fecha: string; cambio: CambioMascota };

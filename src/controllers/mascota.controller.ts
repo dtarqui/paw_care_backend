@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { AuthRequest } from "../middlewares/auth.middleware";
 import { mascotaService } from "../services/mascota.service";
 import { asyncHandler } from "../utils/asyncHandler";
 
@@ -18,5 +19,21 @@ export const mascotaController = {
   crear: asyncHandler(async (req: Request, res: Response) => {
     const mascota = await mascotaService.crear(req.body);
     res.status(201).json({ mascota });
+  }),
+
+  detalle: asyncHandler(async (req: Request, res: Response) => {
+    const id = Number(req.params.id);
+    res.json({ mascota: await mascotaService.detalle(id) });
+  }),
+
+  actualizar: asyncHandler(async (req: AuthRequest, res: Response) => {
+    const id = Number(req.params.id);
+    const mascota = await mascotaService.actualizar(id, req.body, req.usuario!.id);
+    res.json({ mascota });
+  }),
+
+  historial: asyncHandler(async (req: Request, res: Response) => {
+    const id = Number(req.params.id);
+    res.json({ eventos: await mascotaService.historial(id) });
   }),
 };

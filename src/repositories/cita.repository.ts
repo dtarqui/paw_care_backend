@@ -54,6 +54,11 @@ export const citaRepository = {
     return row ? aDominio(row) : undefined;
   },
 
+  async findByMascotaId(mascotaId: number): Promise<Cita[]> {
+    const rows = await prisma.cita.findMany({ where: { mascotaId }, include, orderBy: { fechaHora: "desc" } });
+    return rows.map(aDominio);
+  },
+
   async findOcupadosPorVeterinarioYFecha(veterinarioId: number, fechaISO: string, excluirCitaId?: number): Promise<string[]> {
     const inicio = literalToDate(fechaISO);
     const fin = new Date(inicio);

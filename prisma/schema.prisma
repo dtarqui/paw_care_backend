@@ -79,6 +79,7 @@ model Usuario {
   updatedAt       DateTime        @updatedAt
 
   veterinario     Veterinario?
+  cambiosMascota  CambioMascota[]
 
   @@index([rol])
 }
@@ -146,6 +147,7 @@ model Mascota {
   citas           Cita[]
   atenciones      AtencionMedica[]
   controles       ControlPreventivo[]
+  cambios         CambioMascota[]
 
   @@unique([propietarioId, nombre, especie])
   @@index([propietarioId])
@@ -184,6 +186,7 @@ model AtencionMedica {
   tratamiento      String
   examenesExternos String?
   tipoServicio     String
+  peso             Decimal?           @db.Decimal(5, 2)
   montoConsulta    Decimal            @db.Decimal(10, 2)
   estadoPago       EstadoPagoAtencion @default(PENDIENTE)
   createdAt        DateTime           @default(now())
@@ -266,4 +269,22 @@ model Notificacion {
 
   @@index([estado])
   @@index([canal, estado])
+}
+
+// Bitácora de ediciones manuales a los datos de una Mascota (pantalla de ficha
+// individual). Un cambio de peso registrado en una AtencionMedica NO genera fila
+// acá — ya queda visible como parte de esa atención en el historial; esta tabla
+// es solo para ediciones directas del registro (ej. corregir raza o sexo).
+model CambioMascota {
+  id            Int      @id @default(autoincrement())
+  mascotaId     Int
+  mascota       Mascota  @relation(fields: [mascotaId], references: [id], onDelete: Cascade)
+  campo         String
+  valorAnterior String?
+  valorNuevo    String?
+  fecha         DateTime @default(now())
+  usuarioId     Int?
+  usuario       Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([mascotaId, fecha])
 }

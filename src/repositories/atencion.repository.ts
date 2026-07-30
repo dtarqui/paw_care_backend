@@ -11,6 +11,7 @@ export interface AtencionRegistro {
   diagnostico: string;
   tratamiento: string;
   examenesExternos: string;
+  peso?: number;
   montoConsulta: number;
   estadoPago: EstadoPagoAtencion;
 }
@@ -27,6 +28,7 @@ function aDominio(row: AtencionRow): AtencionRegistro {
     diagnostico: row.diagnostico,
     tratamiento: row.tratamiento,
     examenesExternos: row.examenesExternos ?? "",
+    peso: row.peso ? Number(row.peso) : undefined,
     montoConsulta: Number(row.montoConsulta),
     estadoPago: row.estadoPago,
   };
@@ -39,6 +41,7 @@ export interface NuevaAtencionRegistro {
   diagnostico: string;
   tratamiento: string;
   examenesExternos: string;
+  peso?: number;
   montoConsulta: number;
 }
 
