@@ -1,0 +1,266 @@
+// Copiado tal cual desde database/MODELO_DATOS.md (sección 6).
+// database/MODELO_DATOS.md es la fuente de referencia — si este archivo diverge, ese es el que manda.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Rol {
+  ADMINISTRADOR
+  VETERINARIO
+  RECEPCIONISTA
+}
+
+enum EstadoRegistro {
+  ACTIVO
+  INACTIVO
+}
+
+enum EstadoCita {
+  CONFIRMADA
+  ATENDIDA
+  CANCELADA
+}
+
+enum EstadoPagoAtencion {
+  PENDIENTE
+  PAGADO
+}
+
+enum TipoControlPreventivo {
+  VACUNA
+  DESPARASITACION
+}
+
+enum TipoMovimientoInventario {
+  ENTRADA
+  SALIDA
+}
+
+enum MetodoPago {
+  EFECTIVO
+  TARJETA
+  TRANSFERENCIA
+  QR
+}
+
+enum CanalNotificacion {
+  EMAIL
+  WHATSAPP_MANUAL
+  WHATSAPP_API
+}
+
+enum EstadoNotificacion {
+  PENDIENTE
+  ENVIADO
+  FALLIDO
+}
+
+model Usuario {
+  id              Int             @id @default(autoincrement())
+  nombre          String          @db.VarChar(80)
+  apellidoPaterno String          @db.VarChar(80)
+  apellidoMaterno String?         @db.VarChar(80)
+  ci              String          @unique @db.VarChar(20)
+  username        String          @unique @db.VarChar(50)
+  passwordHash    String
+  telefono        String?         @db.VarChar(20)
+  direccion       String?
+  rol             Rol
+  estado          EstadoRegistro  @default(ACTIVO)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  veterinario     Veterinario?
+
+  @@index([rol])
+}
+
+model Veterinario {
+  id            Int             @id @default(autoincrement())
+  usuarioId     Int             @unique
+  usuario       Usuario         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  matricula     String          @unique @db.VarChar(20)
+  especialidad  String          @db.VarChar(80)
+  estado        EstadoRegistro  @default(ACTIVO)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  horarios      Horario[]
+  citas         Cita[]
+  atenciones    AtencionMedica[]
+
+  @@index([estado])
+}
+
+model Horario {
+  id            Int         @id @default(autoincrement())
+  veterinarioId Int
+  veterinario   Veterinario @relation(fields: [veterinarioId], references: [id], onDelete: Cascade)
+  diaSemana     Int
+  horaInicio    DateTime    @db.Time
+  horaFin       DateTime    @db.Time
+
+  @@unique([veterinarioId, diaSemana, horaInicio])
+  @@index([veterinarioId])
+}
+
+model Propietario {
+  id              Int       @id @default(autoincrement())
+  nombre          String    @db.VarChar(80)
+  apellidoPaterno String    @db.VarChar(80)
+  apellidoMaterno String?   @db.VarChar(80)
+  ci              String    @unique @db.VarChar(20)
+  telefono        String?   @db.VarChar(20)
+  direccion       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  mascotas        Mascota[]
+  notificaciones  Notificacion[]
+
+  @@index([apellidoPaterno, nombre])
+}
+
+model Mascota {
+  id              Int         @id @default(autoincrement())
+  propietarioId   Int
+  propietario     Propietario @relation(fields: [propietarioId], references: [id], onDelete: Restrict)
+  nombre          String      @db.VarChar(60)
+  especie         String      @db.VarChar(40)
+  raza            String?     @db.VarChar(60)
+  color           String?     @db.VarChar(40)
+  sexo            String?     @db.VarChar(10)
+  fechaNacimiento DateTime?   @db.Date
+  peso            Decimal?    @db.Decimal(5, 2)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  citas           Cita[]
+  atenciones      AtencionMedica[]
+  controles       ControlPreventivo[]
+
+  @@unique([propietarioId, nombre, especie])
+  @@index([propietarioId])
+}
+
+model Cita {
+  id            Int         @id @default(autoincrement())
+  codigo        String      @unique @db.VarChar(20)
+  fechaHora     DateTime
+  duracionMin   Int         @default(30)
+  mascotaId     Int
+  mascota       Mascota     @relation(fields: [mascotaId], references: [id], onDelete: Restrict)
+  veterinarioId Int
+  veterinario   Veterinario @relation(fields: [veterinarioId], references: [id], onDelete: Restrict)
+  tipoConsulta  String      @db.VarChar(60)
+  motivo        String?
+  estado        EstadoCita  @default(CONFIRMADA)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  notificaciones Notificacion[]
+
+  @@index([veterinarioId, fechaHora])
+  @@index([mascotaId, fechaHora])
+  @@index([estado, fechaHora])
+}
+
+model AtencionMedica {
+  id               Int                @id @default(autoincrement())
+  mascotaId        Int
+  mascota          Mascota            @relation(fields: [mascotaId], references: [id], onDelete: Restrict)
+  veterinarioId    Int
+  veterinario      Veterinario        @relation(fields: [veterinarioId], references: [id], onDelete: Restrict)
+  fecha            DateTime           @default(now())
+  diagnostico      String
+  tratamiento      String
+  examenesExternos String?
+  montoConsulta    Decimal            @db.Decimal(10, 2)
+  estadoPago       EstadoPagoAtencion @default(PENDIENTE)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  pago             Pago?
+  movimientos      MovimientoInventario[]
+
+  @@index([mascotaId, fecha])
+  @@index([estadoPago])
+}
+
+model Pago {
+  id         Int            @id @default(autoincrement())
+  atencionId Int            @unique
+  atencion   AtencionMedica @relation(fields: [atencionId], references: [id], onDelete: Restrict)
+  metodoPago MetodoPago
+  monto      Decimal        @db.Decimal(10, 2)
+  fecha      DateTime       @default(now())
+  createdAt  DateTime       @default(now())
+
+  @@index([fecha])
+  @@index([metodoPago])
+}
+
+model ControlPreventivo {
+  id              Int                   @id @default(autoincrement())
+  mascotaId       Int
+  mascota         Mascota               @relation(fields: [mascotaId], references: [id], onDelete: Cascade)
+  tipo            TipoControlPreventivo
+  fechaAplicacion DateTime              @db.Date
+  proximaDosis    DateTime?             @db.Date
+  createdAt       DateTime              @default(now())
+
+  notificaciones  Notificacion[]
+
+  @@index([mascotaId])
+  @@index([proximaDosis])
+}
+
+model Medicamento {
+  id          Int      @id @default(autoincrement())
+  nombre      String   @unique @db.VarChar(100)
+  stockActual Int      @default(0)
+  stockMinimo Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  movimientos MovimientoInventario[]
+}
+
+model MovimientoInventario {
+  id            Int                      @id @default(autoincrement())
+  medicamentoId Int
+  medicamento   Medicamento              @relation(fields: [medicamentoId], references: [id], onDelete: Restrict)
+  tipo          TipoMovimientoInventario
+  cantidad      Int
+  fecha         DateTime                 @default(now())
+  atencionId    Int?
+  atencion      AtencionMedica?          @relation(fields: [atencionId], references: [id], onDelete: SetNull)
+
+  @@index([medicamentoId, fecha])
+  @@index([atencionId])
+}
+
+model Notificacion {
+  id                  Int                @id @default(autoincrement())
+  propietarioId       Int
+  propietario         Propietario        @relation(fields: [propietarioId], references: [id], onDelete: Cascade)
+  citaId              Int?
+  cita                Cita?              @relation(fields: [citaId], references: [id], onDelete: SetNull)
+  controlPreventivoId Int?
+  controlPreventivo   ControlPreventivo? @relation(fields: [controlPreventivoId], references: [id], onDelete: SetNull)
+  canal               CanalNotificacion
+  mensaje             String
+  estado              EstadoNotificacion @default(PENDIENTE)
+  enviadoEn           DateTime?
+  createdAt           DateTime           @default(now())
+
+  @@index([estado])
+  @@index([canal, estado])
+}
