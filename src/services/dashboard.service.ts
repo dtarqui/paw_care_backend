@@ -16,6 +16,9 @@ const MODULOS_POR_ROL: Record<Rol, ModuloDashboard[]> = {
     { id: "citas", titulo: "Citas", descripcion: "Gestión de citas médicas", ruta: "/app/citas", icono: "CalendarDays" },
     { id: "control-preventivo", titulo: "Control Preventivo", descripcion: "Vacunación y desparasitación", ruta: "/app/control-preventivo", icono: "ShieldPlus" },
     { id: "pagos", titulo: "Pagos", descripcion: "Gestión de pagos y facturación", ruta: "/app/pagos", icono: "Wallet" },
+    { id: "recordatorios", titulo: "Recordatorios", descripcion: "Avisos de citas y controles por WhatsApp", ruta: "/app/recordatorios", icono: "MessageCircle" },
+    { id: "reportes", titulo: "Reportes", descripcion: "Ingresos y reportes clínicos", ruta: "/app/reportes", icono: "BarChart3" },
+    { id: "inventario", titulo: "Inventario", descripcion: "Stock de medicamentos", ruta: "/app/inventario", icono: "Package" },
     { id: "usuarios", titulo: "Usuarios", descripcion: "Registro y gestión de cuentas", ruta: "/app/usuarios", icono: "Users" },
   ],
   VETERINARIO: [
@@ -28,6 +31,7 @@ const MODULOS_POR_ROL: Record<Rol, ModuloDashboard[]> = {
     { id: "mascotas", titulo: "Mascotas", descripcion: "Registro de clientes y mascotas", ruta: "/app/mascotas", icono: "PawPrint" },
     { id: "citas", titulo: "Citas", descripcion: "Agendar, reprogramar y cancelar citas", ruta: "/app/citas", icono: "CalendarDays" },
     { id: "pagos", titulo: "Pagos", descripcion: "Registrar cobros por atención", ruta: "/app/pagos", icono: "Wallet" },
+    { id: "recordatorios", titulo: "Recordatorios", descripcion: "Avisos de citas y controles por WhatsApp", ruta: "/app/recordatorios", icono: "MessageCircle" },
   ],
 };
 

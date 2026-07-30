@@ -11,6 +11,8 @@ import { DatosDeUsuarioInvalidosError, UsuarioDuplicadoError } from "../services
 import { DatosDeMascotaInvalidosError, MascotaDuplicadaError } from "../services/mascota.service";
 import { DatosDeAtencionInvalidosError } from "../services/atencion.service";
 import { DatosDeControlInvalidosError } from "../services/controlPreventivo.service";
+import { DatosDeMedicamentoInvalidosError, StockInsuficienteError } from "../services/medicamento.service";
+import { DatosDeImportacionInvalidosError } from "../services/importacion.service";
 
 // Middleware de errores centralizado: cada servicio lanza errores de dominio
 // (clases propias) y aquí es el único lugar que los traduce a códigos HTTP.
@@ -33,14 +35,16 @@ export function errorMiddleware(err: unknown, _req: Request, res: Response, _nex
     err instanceof DatosDeUsuarioInvalidosError ||
     err instanceof DatosDeMascotaInvalidosError ||
     err instanceof DatosDeAtencionInvalidosError ||
-    err instanceof DatosDeControlInvalidosError
+    err instanceof DatosDeControlInvalidosError ||
+    err instanceof DatosDeMedicamentoInvalidosError ||
+    err instanceof DatosDeImportacionInvalidosError
   ) {
     return res.status(400).json({ error: err.message });
   }
   if (err instanceof AgendaAjenaError) {
     return res.status(403).json({ error: err.message });
   }
-  if (err instanceof UsuarioDuplicadoError || err instanceof MascotaDuplicadaError) {
+  if (err instanceof UsuarioDuplicadoError || err instanceof MascotaDuplicadaError || err instanceof StockInsuficienteError) {
     return res.status(409).json({ error: err.message });
   }
 

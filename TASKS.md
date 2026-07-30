@@ -19,17 +19,21 @@
 - [x] Tarea 04 — HU4: Registrar Pagos — reescrito para derivar "pendientes" en vivo de `AtencionMedica.estadoPago`, en vez de una lista separada
 - [x] Tarea 05 — HU5: Agendar, Reprogramar y Cancelar Citas — incluye `PUT /api/citas/:id` (reprogramar) con la misma restricción de rol que crear
 - [x] Tarea 06 — HU6: Control de Vacunación y Desparasitación
-- [ ] Tarea 07 — HU7: Reporte de Ingresos Económicos
-- [ ] Tarea 08 — HU8: Reportes Clínicos y Administrativos
-- [ ] Tarea 09 — HU9: Gestión de Inventario de Medicamentos
-- [ ] Tarea 10 — HU10: Sistema de Alertas Automáticas
-- [ ] Tarea 11 (opcional) — HU11 Track A: WhatsApp manual
-- [ ] Tarea 12 (opcional) — HU11 Track B: WhatsApp Cloud API
-- [ ] Tarea 13 (opcional) — HU12: Pago por QR — el enum `MetodoPago` ya incluye `QR` y los endpoints de pago ya lo aceptan
-- [ ] Tarea 14 (opcional) — HU13: Importación desde Excel
-- [ ] Tarea 15 (opcional) — HU15: Exportación completa de datos
+- [x] Tarea 07 — HU7: Reporte de Ingresos Económicos — `GET /api/reportes/ingresos` (filtros: fecha, tipoServicio, metodoPago + totales)
+- [x] Tarea 08 — HU8: Reportes Clínicos y Administrativos — `GET /api/reportes` (atenciones | ingresos-por-servicio), `GET /api/reportes/export/excel` y `/export/pdf` (ExcelJS + PDFKit)
+- [x] Tarea 09 — HU9: Gestión de Inventario de Medicamentos — `Medicamento` + `MovimientoInventario`; `POST /api/atenciones` acepta medicamentos consumidos y descuenta stock en la misma transacción lógica
+- [x] Tarea 10 — HU10: Sistema de Alertas Automáticas — resuelto como el mismo cálculo que usa la Tarea 11 (recordatorios), en vez de un job en segundo plano separado
+- [x] Tarea 11 (opcional) — HU11 Track A: WhatsApp manual — `GET /api/recordatorios/pendientes` (citas <24h + controles <7 días, calculado en vivo) y `POST /api/recordatorios/:id/marcar-enviado`
+- [ ] Tarea 12 (opcional) — HU11 Track B: WhatsApp Cloud API — **fuera de alcance a propósito**: necesita credenciales reales de Meta, no se puede simular de forma honesta con datos locales
+- [x] Tarea 13 (opcional) — HU12: Pago por QR — el enum `MetodoPago` ya incluye `QR`; confirmado que se filtra correctamente en `reporte.service.ts`
+- [x] Tarea 14 (opcional) — HU13: Importación desde Excel — `POST /api/importaciones/clientes` (multer + ExcelJS), reutiliza la misma lógica de deduplicación de propietario que HU2
+- [x] Tarea 15 (opcional) — HU15: Exportación completa de datos — `GET /api/exportacion/completa`, una hoja por entidad (Usuarios sin password, Veterinarios, Propietarios, Mascotas, Citas, AtencionesMedicas, Pagos, ControlesPreventivos, Medicamentos)
 
-**Restricción de negocio agregada (no estaba en el prompt original de HU5):** un usuario con rol Veterinario solo puede crear o reprogramar citas para sí mismo — Administrador y Recepcionista pueden hacerlo para cualquier veterinario. Implementado en `cita.service.ts` (`AgendaAjenaError`, 403), usando el vínculo `Veterinario.usuarioId`.
+**Todo lo planeado está construido**, salvo HU11 Track B (documentado como fuera de alcance por depender de un servicio externo real).
+
+**Restricción de negocio agregada (no estaba en el prompt original de HU5):** un usuario con rol Veterinario solo puede crear o reprogramar citas para sí mismo — Administrador y Recepcionista pueden hacerlo para cualquier veterinario. Implementado en `cita.service.ts` (`AgendaAjenaError`, 403), usando el vínculo `Veterinario.usuarioId`. La misma idea se reutilizó para bloquear el selector de veterinario en Nueva Atención (HU3) en el frontend.
+
+**Cambio de modelo no previsto en el prompt original:** `AtencionMedica` ganó un campo `tipoServicio` (mismo catálogo que `Cita.tipoConsulta`) — sin él, HU7/HU8 no tenían cómo agrupar ingresos "por tipo de servicio". Ya se propagó a `database/MODELO_DATOS.md` (tabla de campos, bloque Prisma e índice `(tipoServicio, fecha)`).
 
 *(HU14 — PWA instalable — no requiere trabajo de backend; ver `frontend/TASKS.md`.)*
 

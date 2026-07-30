@@ -2,6 +2,10 @@ import { propietarios } from "../data/propietarios.data";
 import { Propietario } from "../types";
 
 export const propietarioRepository = {
+  findAll(): Propietario[] {
+    return propietarios;
+  },
+
   findById(id: number): Propietario | undefined {
     return propietarios.find((p) => p.id === id);
   },
