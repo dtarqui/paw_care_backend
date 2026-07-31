@@ -3,10 +3,13 @@ import { AuthRequest } from "../middlewares/auth.middleware";
 import { citaService } from "../services/cita.service";
 import { EstadoCita } from "../types";
 import { asyncHandler } from "../utils/asyncHandler";
+import { leerPaginacion } from "../utils/pagination";
 
 export const citaController = {
-  listar: asyncHandler(async (_req: Request, res: Response) => {
-    res.json({ citas: await citaService.listar() });
+  listar: asyncHandler(async (req: Request, res: Response) => {
+    const { page, pageSize } = leerPaginacion(req);
+    const { items, total } = await citaService.listar(page, pageSize);
+    res.json({ citas: items, total, page, pageSize });
   }),
 
   disponibilidad: asyncHandler(async (req: Request, res: Response) => {

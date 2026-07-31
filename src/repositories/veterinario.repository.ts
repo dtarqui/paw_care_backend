@@ -28,6 +28,16 @@ export const veterinarioRepository = {
     return rows.map(aDominio);
   },
 
+  /** Solo veterinarios ACTIVO — usado en selects de agendar/atender (no tiene sentido ofrecer uno desactivado). */
+  async findAllActivos(): Promise<Veterinario[]> {
+    const rows = await prisma.veterinario.findMany({ where: { estado: "ACTIVO" }, include, orderBy: { id: "asc" } });
+    return rows.map(aDominio);
+  },
+
+  async actualizarEstado(id: number, estado: "ACTIVO" | "INACTIVO"): Promise<void> {
+    await prisma.veterinario.update({ where: { id }, data: { estado } });
+  },
+
   async findById(id: number): Promise<Veterinario | undefined> {
     const row = await prisma.veterinario.findUnique({ where: { id }, include });
     return row ? aDominio(row) : undefined;

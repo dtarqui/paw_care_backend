@@ -47,6 +47,20 @@
 
 ---
 
+## Gaps cerrados (sesión posterior — análisis de brechas contra este documento)
+
+- [x] **Ficha individual de mascota** — `GET/PATCH /api/mascotas/:id`, `GET /api/mascotas/:id/historial` (línea de tiempo unificada: atenciones, controles, citas y ediciones manuales). Modelo nuevo `CambioMascota` (bitácora de ediciones) y campo `AtencionMedica.peso` (opcional, alimenta el historial de peso sin tabla propia).
+- [x] **Índice único parcial de Cita** — migración manual aplicada (ver nota más arriba y `database/MODELO_DATOS.md` sección 5); `cita.service.ts` traduce el choque de índice (Prisma `P2002`) a `ConflictoDeAgendaError` en vez de un 500 crudo.
+- [x] **Desactivar usuario/veterinario** — `PATCH /api/usuarios/:id/estado`. Se corrigió un bug real: `auth.service.ts` nunca chequeaba `Usuario.estado`, así que una cuenta `INACTIVO` podía seguir logueándose. Ahora se bloquea con el mismo mensaje genérico que una contraseña incorrecta. Al desactivar un Veterinario, su registro `Veterinario.estado` se sincroniza — `GET /api/veterinarios?activos=true` (usado por los selects de Nueva Cita/Nueva Atención/Horarios) ya no lo ofrece.
+- [x] **Hardening de producción** — `helmet()`, CORS restringido por `FRONTEND_URL` (abierto si no está configurada), rate-limit de 10 intentos/15min en `POST /api/auth/login` (`middlewares/rateLimit.middleware.ts`).
+- [x] **Pruebas automatizadas (Jest + Supertest)** — no existían. Se agregó `jest.config.ts` + mock manual de `lib/prisma.ts` (`jest-mock-extended`, sin tocar Supabase — apto para CI sin secretos). Cubre `auth.service`, `pago.service`, `cita.service` (mockeando repositorios, no Prisma, por la complejidad de los `include` anidados) y un test end-to-end de `POST /api/auth/login` contra `createApp()`. `npm test`.
+- [x] **CI básico** — `.github/workflows/ci.yml`: `npm ci` → `prisma generate` → `tsc --noEmit` → `npm test`, en push/PR a `main`.
+- [x] **Pantalla de Propietarios (CRUD)** — `GET /api/propietarios` (con conteo de mascotas vía `_count`), `PATCH /api/propietarios/:id`. El `ci` no es editable a propósito (es la clave de búsqueda usada en HU2/HU3).
+- [x] **Gestión de Horarios de veterinario** — la tabla `Horario` existía en el schema desde el diseño original pero nunca se usaba; la disponibilidad de citas (HU5) dependía de un bloque horario fijo hardcodeado (`BLOQUES_HORARIO`). Ahora `citaService.disponibilidad` calcula los bloques reales desde `Horario` según el `diaSemana` de la fecha consultada — un veterinario sin horario cargado ese día queda sin disponibilidad. `GET/PUT /api/veterinarios/:id/horarios` (mismo criterio de permisos que citas: un Veterinario solo edita el suyo). Se sembraron horarios Lun-Vie 08:00-12:00 y 14:00-16:30 para los 3 veterinarios demo (reproduce exactamente los bloques que daba el array fijo, para no romper la demo). **Nota técnica:** se comprobó empíricamente que `@db.Time` (a diferencia de `@db.Date`) sí se comporta como un `DateTime` normal con getters locales — ver `horaLiteralToDate`/`dateToHoraLiteral` en `utils/date.ts`.
+- [x] **Paginación** — `GET /mascotas`, `GET /citas`, `GET /usuarios` aceptan `?page=&pageSize=` (máx. 100) y devuelven `{ total, page, pageSize }` además del arreglo. `findAll()` sin paginar se mantiene intacto para los consumidores internos que necesitan el set completo (exportación completa, cálculo de recordatorios).
+
+**Todo lo del análisis de gaps está cerrado.**
+
 ## Tarea 00 — Setup del backend
 
 **Depende de:** nada (primera tarea).

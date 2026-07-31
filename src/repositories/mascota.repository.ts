@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
-import { CambioMascota, Mascota } from "../types";
+import { CambioMascota, Mascota, Paginado } from "../types";
 import { dateOnlyToLiteral, dateToLiteral, literalDateOnlyToDate } from "../utils/date";
 
 const include = { propietario: true } satisfies Prisma.MascotaInclude;
@@ -39,6 +39,16 @@ export const mascotaRepository = {
   async findAll(): Promise<Mascota[]> {
     const rows = await prisma.mascota.findMany({ include, orderBy: { id: "asc" } });
     return rows.map(aDominio);
+  },
+
+  /** Para la pantalla de listado — a diferencia de `findAll()`, que se usa para
+   * exportación completa y otros cálculos internos que necesitan el set entero. */
+  async findAllPaginado(page: number, pageSize: number): Promise<Paginado<Mascota>> {
+    const [rows, total] = await Promise.all([
+      prisma.mascota.findMany({ include, orderBy: { id: "asc" }, skip: (page - 1) * pageSize, take: pageSize }),
+      prisma.mascota.count(),
+    ]);
+    return { items: rows.map(aDominio), total, page, pageSize };
   },
 
   async findById(id: number): Promise<Mascota | undefined> {

@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { addDays, literalDateOnlyToDate, literalToDate, todayISO } from "../src/utils/date";
+import { addDays, horaLiteralToDate, literalDateOnlyToDate, literalToDate, todayISO } from "../src/utils/date";
 
 const prisma = new PrismaClient();
 
@@ -66,6 +66,19 @@ async function main() {
   const carlos = await prisma.veterinario.create({ data: { usuarioId: usuarioCarlos.id, matricula: "VET-011", especialidad: "Medicina General" } });
   const luis = await prisma.veterinario.create({ data: { usuarioId: usuarioLuis.id, matricula: "VET-003", especialidad: "Dermatología" } });
   const maria = await prisma.veterinario.create({ data: { usuarioId: usuarioMaria.id, matricula: "VET-004", especialidad: "Cirugía" } });
+
+  // --- Horarios: Lun-Vie, mañana y tarde, para los 3 veterinarios (misma franja
+  // que usaba el bloque horario fijo del modo demo — 08:00-11:30 y 14:00-16:00
+  // en bloques de 30 min, ver horario.service.ts:generarBloques). ------------
+  const DIAS_LABORALES = [1, 2, 3, 4, 5]; // lunes a viernes
+  await prisma.horario.createMany({
+    data: [carlos, luis, maria].flatMap((vet) =>
+      DIAS_LABORALES.flatMap((diaSemana) => [
+        { veterinarioId: vet.id, diaSemana, horaInicio: horaLiteralToDate("08:00"), horaFin: horaLiteralToDate("12:00") },
+        { veterinarioId: vet.id, diaSemana, horaInicio: horaLiteralToDate("14:00"), horaFin: horaLiteralToDate("16:30") },
+      ])
+    ),
+  });
 
   // --- Citas -----------------------------------------------------------------
   await prisma.cita.createMany({

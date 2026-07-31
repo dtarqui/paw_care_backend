@@ -55,7 +55,15 @@ El servidor Express normal (`src/index.ts`, con `.listen()`) es solo para desarr
 Antes de desplegar, en el proyecto de Vercel (Project Settings → Environment Variables) hay que configurar:
 - `DATABASE_URL` y `DIRECT_URL` (las mismas del `.env`, apuntando a Supabase)
 - `JWT_SECRET` (un valor propio, no el de demo)
+- `FRONTEND_URL` (la URL del frontend ya desplegado) — sin esto, CORS queda abierto a cualquier origen
 - `DEMO_DELAY_MS=0` (opcional)
+
+## Hardening incluido
+
+- **CORS restringido** vía `FRONTEND_URL` (arriba) — abierto solo si no está configurada.
+- **Rate limiting** en `POST /api/auth/login`: 10 intentos cada 15 minutos por IP (`middlewares/rateLimit.middleware.ts`).
+- **`helmet`** con la configuración por defecto (cabeceras HTTP de seguridad estándar).
+- **Índice único parcial** en `Cita` (`veterinarioId`, `fechaHora` donde `estado <> 'CANCELADA'`) — blindaje a nivel de base de datos contra doble-reserva, además de la validación de aplicación.
 
 `postinstall: prisma generate` ya está en `package.json` — Vercel lo corre automáticamente en cada build, así el cliente de Prisma queda generado con el binario correcto (`binaryTargets` en `prisma/schema.prisma` incluye `rhel-openssl-3.0.x` para el runtime Linux de Vercel).
 

@@ -5,6 +5,7 @@ import { citaController } from "../controllers/cita.controller";
 import { controlPreventivoController } from "../controllers/controlPreventivo.controller";
 import { dashboardController } from "../controllers/dashboard.controller";
 import { exportacionController } from "../controllers/exportacion.controller";
+import { horarioController } from "../controllers/horario.controller";
 import { importacionController, uploadExcel } from "../controllers/importacion.controller";
 import { mascotaController } from "../controllers/mascota.controller";
 import { medicamentoController } from "../controllers/medicamento.controller";
@@ -15,26 +16,35 @@ import { reporteController } from "../controllers/reporte.controller";
 import { usuarioController } from "../controllers/usuario.controller";
 import { veterinarioController } from "../controllers/veterinario.controller";
 import { requireAuth, requireRole } from "../middlewares/auth.middleware";
+import { loginRateLimit } from "../middlewares/rateLimit.middleware";
 
 export const router = Router();
 
 // Auth (HU1) — sin requireAuth, es el punto de entrada.
-router.post("/auth/login", authController.login);
+router.post("/auth/login", loginRateLimit, authController.login);
 
 // Usuarios (HU1 · P02) — solo Administrador gestiona cuentas.
 router.get("/usuarios", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.listar);
 router.post("/usuarios", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.crear);
+router.patch("/usuarios/:id/estado", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.cambiarEstado);
 
 // Dashboard (P01)
 router.get("/dashboard/modulos", requireAuth, dashboardController.modulos);
 
 // Propietarios (HU2 · P03)
 router.get("/propietarios/buscar", requireAuth, propietarioController.buscar);
+router.get("/propietarios", requireAuth, propietarioController.listar);
+router.patch("/propietarios/:id", requireAuth, propietarioController.actualizar);
 
 // Mascotas (HU2 · P04)
 router.get("/mascotas", requireAuth, mascotaController.listar);
 router.get("/mascotas/buscar", requireAuth, mascotaController.buscar);
 router.post("/mascotas", requireAuth, mascotaController.crear);
+
+// Ficha individual de mascota — datos completos, edición y línea de tiempo unificada
+router.get("/mascotas/:id", requireAuth, mascotaController.detalle);
+router.patch("/mascotas/:id", requireAuth, mascotaController.actualizar);
+router.get("/mascotas/:id/historial", requireAuth, mascotaController.historial);
 
 // Atención Médica (HU3 · P05)
 router.get("/mascotas/:id/atenciones", requireAuth, atencionController.historial);
@@ -42,6 +52,10 @@ router.post("/atenciones", requireAuth, atencionController.crear);
 
 // Veterinarios (soporte para selects de Nueva Cita / Nueva Atención)
 router.get("/veterinarios", requireAuth, veterinarioController.listar);
+
+// Horarios de atención por veterinario (HU1 · soporta la disponibilidad real de HU5)
+router.get("/veterinarios/:id/horarios", requireAuth, horarioController.listar);
+router.put("/veterinarios/:id/horarios", requireAuth, horarioController.actualizar);
 
 // Citas (HU5 · P07)
 router.get("/citas", requireAuth, citaController.listar);

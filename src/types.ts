@@ -1,6 +1,13 @@
 // Tipos compartidos del modo demo. Reflejan el modelo de datos real
 // documentado en database/MODELO_DATOS.md (versión reducida, sin Prisma).
 
+export interface Paginado<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export type Rol = "ADMINISTRADOR" | "VETERINARIO" | "RECEPCIONISTA";
 export type EstadoRegistro = "ACTIVO" | "INACTIVO";
 
@@ -34,6 +41,10 @@ export interface Propietario {
   apellidoPaterno: string;
   ci: string;
   telefono: string;
+}
+
+export interface PropietarioConMascotas extends Propietario {
+  cantidadMascotas: number;
 }
 
 export interface Mascota {

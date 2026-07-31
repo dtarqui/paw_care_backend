@@ -95,3 +95,21 @@ export function dateOnlyToLiteral(fecha: Date): string {
   const dd = String(fecha.getUTCDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
+
+/**
+ * Para columnas `@db.Time` (Horario.horaInicio/horaFin): a diferencia de
+ * `@db.Date`, se comprobó empíricamente (round-trip directo con Prisma) que
+ * se comportan como un `DateTime` normal — escribir y leer con getters
+ * LOCALES es exacto. Se usa una fecha ancla arbitraria (1970-01-01); solo
+ * importa la hora.
+ */
+export function horaLiteralToDate(literalHHmm: string): Date {
+  const [hh, mi] = literalHHmm.split(":").map(Number);
+  return new Date(1970, 0, 1, hh, mi);
+}
+
+export function dateToHoraLiteral(fecha: Date): string {
+  const hh = String(fecha.getHours()).padStart(2, "0");
+  const mi = String(fecha.getMinutes()).padStart(2, "0");
+  return `${hh}:${mi}`;
+}

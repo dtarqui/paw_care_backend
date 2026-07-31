@@ -21,8 +21,9 @@ function aPublico(usuario: { password: string } & UsuarioPublico): UsuarioPublic
 export const authService = {
   async login(username: string, password: string): Promise<{ token: string; usuario: UsuarioPublico }> {
     const usuario = await usuarioRepository.findByUsername(username);
-    if (!usuario || !(await bcrypt.compare(password, usuario.password))) {
-      // Mensaje genérico a propósito: no revela si falló el usuario o la contraseña (HU1).
+    if (!usuario || usuario.estado === "INACTIVO" || !(await bcrypt.compare(password, usuario.password))) {
+      // Mensaje genérico a propósito: no revela si falló el usuario, la contraseña,
+      // o si la cuenta existe pero está desactivada (HU1).
       throw new CredencialesInvalidasError();
     }
     const publico = aPublico(usuario);

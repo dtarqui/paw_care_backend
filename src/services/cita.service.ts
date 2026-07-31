@@ -1,7 +1,28 @@
+import { Prisma } from "@prisma/client";
 import { citaRepository } from "../repositories/cita.repository";
 import { mascotaRepository } from "../repositories/mascota.repository";
 import { veterinarioRepository } from "../repositories/veterinario.repository";
 import { Cita, EstadoCita, Rol } from "../types";
+import { literalToDate } from "../utils/date";
+import { AgendaAjenaError } from "./agenda.errors";
+import { horarioService } from "./horario.service";
+
+export { AgendaAjenaError };
+
+/** El índice único parcial `cita_vet_fecha_activa_idx` (ver migración
+ * cita_unique_activa) es el respaldo a nivel de BD contra doble-reserva en
+ * condición de carrera — la validación de `ocupados` de arriba cubre el
+ * camino normal, esto solo evita un 500 crudo en el caso raro de choque. */
+async function creandoOReprogramando<T>(accion: () => Promise<T>): Promise<T> {
+  try {
+    return await accion();
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw new ConflictoDeAgendaError();
+    }
+    throw error;
+  }
+}
 
 export class CitaNoEncontradaError extends Error {
   constructor() {
@@ -21,13 +42,6 @@ export class DatosDeCitaInvalidosError extends Error {
   constructor(mensaje: string) {
     super(mensaje);
     this.name = "DatosDeCitaInvalidosError";
-  }
-}
-
-export class AgendaAjenaError extends Error {
-  constructor() {
-    super("Como veterinario solo puedes agendar citas para ti mismo");
-    this.name = "AgendaAjenaError";
   }
 }
 
@@ -53,13 +67,17 @@ async function generarCodigo(fechaISO: string): Promise<string> {
 }
 
 export const citaService = {
-  listar(): Promise<Cita[]> {
-    return citaRepository.findAll();
+  listar(page = 1, pageSize = 20) {
+    return citaRepository.findAllPaginado(page, pageSize);
   },
 
   async disponibilidad(veterinarioId: number, fechaISO: string) {
-    const ocupados = new Set(await citaRepository.findOcupadosPorVeterinarioYFecha(veterinarioId, fechaISO));
-    return citaRepository.bloquesHorarioBase().map((hora) => ({
+    const diaSemana = literalToDate(fechaISO).getDay();
+    const [bloques, ocupados] = await Promise.all([
+      horarioService.bloquesBase(veterinarioId, diaSemana),
+      citaRepository.findOcupadosPorVeterinarioYFecha(veterinarioId, fechaISO).then((h) => new Set(h)),
+    ]);
+    return bloques.map((hora) => ({
       hora,
       disponible: !ocupados.has(hora),
     }));
@@ -84,7 +102,7 @@ export const citaService = {
     if (solicitante.rol === "VETERINARIO") {
       const propioVeterinario = await veterinarioRepository.findByUsuarioId(solicitante.id);
       if (!propioVeterinario || propioVeterinario.id !== input.veterinarioId) {
-        throw new AgendaAjenaError();
+        throw new AgendaAjenaError("Como veterinario solo puedes agendar citas para ti mismo");
       }
     }
 
@@ -93,15 +111,17 @@ export const citaService = {
       throw new ConflictoDeAgendaError();
     }
 
-    return citaRepository.create({
-      codigo: await generarCodigo(input.fecha),
-      fechaHora: `${input.fecha}T${input.hora}`,
-      duracionMin: input.duracionMin ?? 30,
-      mascotaId: mascota.id,
-      veterinarioId: veterinario.id,
-      tipoConsulta: input.tipoConsulta,
-      motivo: input.motivo,
-    });
+    return creandoOReprogramando(async () =>
+      citaRepository.create({
+        codigo: await generarCodigo(input.fecha),
+        fechaHora: `${input.fecha}T${input.hora}`,
+        duracionMin: input.duracionMin ?? 30,
+        mascotaId: mascota.id,
+        veterinarioId: veterinario.id,
+        tipoConsulta: input.tipoConsulta,
+        motivo: input.motivo,
+      })
+    );
   },
 
   async reprogramar(id: number, input: { fecha: string; hora: string }, solicitante: Solicitante): Promise<Cita> {
@@ -117,7 +137,7 @@ export const citaService = {
     if (solicitante.rol === "VETERINARIO") {
       const propioVeterinario = await veterinarioRepository.findByUsuarioId(solicitante.id);
       if (!propioVeterinario || propioVeterinario.id !== cita.veterinario.id) {
-        throw new AgendaAjenaError();
+        throw new AgendaAjenaError("Como veterinario solo puedes agendar citas para ti mismo");
       }
     }
 
@@ -126,6 +146,6 @@ export const citaService = {
       throw new ConflictoDeAgendaError();
     }
 
-    return citaRepository.reprogramar(id, `${input.fecha}T${input.hora}`);
+    return creandoOReprogramando(() => citaRepository.reprogramar(id, `${input.fecha}T${input.hora}`));
   },
 };

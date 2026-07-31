@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "../lib/prisma";
-import { Rol, Usuario } from "../types";
+import { EstadoRegistro, Paginado, Rol, Usuario } from "../types";
 
 type UsuarioRow = NonNullable<Awaited<ReturnType<typeof prisma.usuario.findUnique>>>;
 
@@ -51,6 +51,14 @@ export const usuarioRepository = {
     return rows.map(aDominio);
   },
 
+  async findAllPaginado(page: number, pageSize: number): Promise<Paginado<Usuario>> {
+    const [rows, total] = await Promise.all([
+      prisma.usuario.findMany({ orderBy: { id: "asc" }, skip: (page - 1) * pageSize, take: pageSize }),
+      prisma.usuario.count(),
+    ]);
+    return { items: rows.map(aDominio), total, page, pageSize };
+  },
+
   async create(input: NuevoUsuarioRegistro): Promise<Usuario> {
     const passwordHash = await bcrypt.hash(input.password, 10);
     const row = await prisma.usuario.create({
@@ -66,6 +74,11 @@ export const usuarioRepository = {
         estado: "ACTIVO",
       },
     });
+    return aDominio(row);
+  },
+
+  async actualizarEstado(id: number, estado: EstadoRegistro): Promise<Usuario> {
+    const row = await prisma.usuario.update({ where: { id }, data: { estado } });
     return aDominio(row);
   },
 };

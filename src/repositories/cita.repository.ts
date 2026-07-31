@@ -1,13 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
-import { Cita, EstadoCita } from "../types";
+import { Cita, EstadoCita, Paginado } from "../types";
 import { dateToLiteral, literalToDate } from "../utils/date";
-
-// Horario de atención estándar usado para calcular disponibilidad (Horario en el modelo real, database/MODELO_DATOS.md).
-const BLOQUES_HORARIO = [
-  "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
-  "11:00", "11:30", "14:00", "14:30", "15:00", "15:30", "16:00",
-];
 
 const include = {
   mascota: { select: { id: true, nombre: true, especie: true } },
@@ -49,6 +43,14 @@ export const citaRepository = {
     return rows.map(aDominio);
   },
 
+  async findAllPaginado(page: number, pageSize: number): Promise<Paginado<Cita>> {
+    const [rows, total] = await Promise.all([
+      prisma.cita.findMany({ include, orderBy: { fechaHora: "asc" }, skip: (page - 1) * pageSize, take: pageSize }),
+      prisma.cita.count(),
+    ]);
+    return { items: rows.map(aDominio), total, page, pageSize };
+  },
+
   async findById(id: number): Promise<Cita | undefined> {
     const row = await prisma.cita.findUnique({ where: { id }, include });
     return row ? aDominio(row) : undefined;
@@ -74,10 +76,6 @@ export const citaRepository = {
       select: { fechaHora: true },
     });
     return rows.map((r) => dateToLiteral(r.fechaHora).slice(11, 16));
-  },
-
-  bloquesHorarioBase(): string[] {
-    return BLOQUES_HORARIO;
   },
 
   /** Cuenta citas cuyo código contiene el prefijo YYYYMMDD, para numerar la secuencia diaria (ver cita.service.ts). */

@@ -16,6 +16,13 @@ export class UsuarioDuplicadoError extends Error {
   }
 }
 
+export class UsuarioNoEncontradoError extends Error {
+  constructor() {
+    super("El usuario solicitado no existe");
+    this.name = "UsuarioNoEncontradoError";
+  }
+}
+
 interface NuevoUsuarioInput {
   nombre: string;
   apellidoPaterno: string;
@@ -35,9 +42,9 @@ function aPublico(usuario: { password: string } & UsuarioPublico): UsuarioPublic
 }
 
 export const usuarioService = {
-  async listar(): Promise<UsuarioPublico[]> {
-    const usuarios = await usuarioRepository.findAll();
-    return usuarios.map(aPublico);
+  async listar(page = 1, pageSize = 20) {
+    const paginado = await usuarioRepository.findAllPaginado(page, pageSize);
+    return { ...paginado, items: paginado.items.map(aPublico) };
   },
 
   async crear(input: NuevoUsuarioInput): Promise<UsuarioPublico> {
@@ -75,5 +82,21 @@ export const usuarioService = {
     }
 
     return aPublico(nuevoUsuario);
+  },
+
+  async cambiarEstado(id: number, estado: "ACTIVO" | "INACTIVO"): Promise<UsuarioPublico> {
+    if (!(await usuarioRepository.findById(id))) {
+      throw new UsuarioNoEncontradoError();
+    }
+    const actualizado = await usuarioRepository.actualizarEstado(id, estado);
+
+    // Si tiene un Veterinario vinculado, se mantiene sincronizado — desactivar el
+    // login también debería sacarlo de los selects de agendar/atender.
+    const veterinario = await veterinarioRepository.findByUsuarioId(id);
+    if (veterinario) {
+      await veterinarioRepository.actualizarEstado(veterinario.id, estado);
+    }
+
+    return aPublico(actualizado);
   },
 };

@@ -7,13 +7,15 @@ import {
   DatosDeCitaInvalidosError,
 } from "../services/cita.service";
 import { PagoInvalidoError } from "../services/pago.service";
-import { DatosDeUsuarioInvalidosError, UsuarioDuplicadoError } from "../services/usuario.service";
-import { DatosDeMascotaInvalidosError, MascotaDuplicadaError } from "../services/mascota.service";
+import { DatosDeUsuarioInvalidosError, UsuarioDuplicadoError, UsuarioNoEncontradoError } from "../services/usuario.service";
+import { DatosDeMascotaInvalidosError, MascotaDuplicadaError, MascotaNoEncontradaError } from "../services/mascota.service";
 import { DatosDeAtencionInvalidosError } from "../services/atencion.service";
 import { DatosDeControlInvalidosError } from "../services/controlPreventivo.service";
 import { DatosDeMedicamentoInvalidosError, StockInsuficienteError } from "../services/medicamento.service";
 import { DatosDeImportacionInvalidosError } from "../services/importacion.service";
 import { RecordatorioNoEncontradoError } from "../services/recordatorio.service";
+import { DatosDePropietarioInvalidosError, PropietarioNoEncontradoError } from "../services/propietario.service";
+import { DatosDeHorarioInvalidosError } from "../services/horario.service";
 
 // Middleware de errores centralizado: cada servicio lanza errores de dominio
 // (clases propias) y aquí es el único lugar que los traduce a códigos HTTP.
@@ -25,7 +27,13 @@ export function errorMiddleware(err: unknown, _req: Request, res: Response, _nex
   if (err instanceof PagoInvalidoError) {
     return res.status(400).json({ error: err.message });
   }
-  if (err instanceof CitaNoEncontradaError || err instanceof RecordatorioNoEncontradoError) {
+  if (
+    err instanceof CitaNoEncontradaError ||
+    err instanceof RecordatorioNoEncontradoError ||
+    err instanceof MascotaNoEncontradaError ||
+    err instanceof UsuarioNoEncontradoError ||
+    err instanceof PropietarioNoEncontradoError
+  ) {
     return res.status(404).json({ error: err.message });
   }
   if (err instanceof ConflictoDeAgendaError) {
@@ -38,7 +46,9 @@ export function errorMiddleware(err: unknown, _req: Request, res: Response, _nex
     err instanceof DatosDeAtencionInvalidosError ||
     err instanceof DatosDeControlInvalidosError ||
     err instanceof DatosDeMedicamentoInvalidosError ||
-    err instanceof DatosDeImportacionInvalidosError
+    err instanceof DatosDeImportacionInvalidosError ||
+    err instanceof DatosDePropietarioInvalidosError ||
+    err instanceof DatosDeHorarioInvalidosError
   ) {
     return res.status(400).json({ error: err.message });
   }

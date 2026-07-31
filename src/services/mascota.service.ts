@@ -60,8 +60,8 @@ const ETIQUETAS_CAMPO: Record<keyof ActualizarMascotaInput, string> = {
 };
 
 export const mascotaService = {
-  listar(): Promise<Mascota[]> {
-    return mascotaRepository.findAll();
+  listar(page = 1, pageSize = 20) {
+    return mascotaRepository.findAllPaginado(page, pageSize);
   },
 
   buscarPorCiPropietario(ci: string): Promise<Mascota[]> {

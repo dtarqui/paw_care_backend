@@ -2,10 +2,13 @@ import { Request, Response } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { mascotaService } from "../services/mascota.service";
 import { asyncHandler } from "../utils/asyncHandler";
+import { leerPaginacion } from "../utils/pagination";
 
 export const mascotaController = {
-  listar: asyncHandler(async (_req: Request, res: Response) => {
-    res.json({ mascotas: await mascotaService.listar() });
+  listar: asyncHandler(async (req: Request, res: Response) => {
+    const { page, pageSize } = leerPaginacion(req);
+    const { items, total } = await mascotaService.listar(page, pageSize);
+    res.json({ mascotas: items, total, page, pageSize });
   }),
 
   buscar: asyncHandler(async (req: Request, res: Response) => {
