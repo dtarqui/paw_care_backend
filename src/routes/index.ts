@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { atencionController } from "../controllers/atencion.controller";
+import { auditoriaController } from "../controllers/auditoria.controller";
 import { authController } from "../controllers/auth.controller";
 import { citaController } from "../controllers/cita.controller";
 import { controlPreventivoController } from "../controllers/controlPreventivo.controller";
@@ -16,16 +17,26 @@ import { reporteController } from "../controllers/reporte.controller";
 import { usuarioController } from "../controllers/usuario.controller";
 import { veterinarioController } from "../controllers/veterinario.controller";
 import { requireAuth, requireRole } from "../middlewares/auth.middleware";
-import { loginRateLimit, preregistroRateLimit } from "../middlewares/rateLimit.middleware";
+import { forgotPasswordRateLimit, loginRateLimit, preregistroRateLimit } from "../middlewares/rateLimit.middleware";
 
 export const router = Router();
 
 // Auth (HU1) — sin requireAuth, es el punto de entrada.
 router.post("/auth/login", loginRateLimit, authController.login);
+router.post("/auth/forgot-password", forgotPasswordRateLimit, authController.solicitarRecuperacion);
+router.post("/auth/reset-password", forgotPasswordRateLimit, authController.restablecerConToken);
 
 // Preregistro público de Veterinario — sin requireAuth (igual que login); la cuenta
 // queda INACTIVO hasta que un Administrador la aprueba desde /app/usuarios.
 router.post("/usuarios/preregistro", preregistroRateLimit, usuarioController.preregistro);
+
+// Invitación de Veterinario por un Administrador — convive con el preregistro público
+// de arriba. Validar/aceptar son públicos (la persona invitada todavía no tiene cuenta).
+router.get("/usuarios/invitaciones", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.listarInvitaciones);
+router.post("/usuarios/invitaciones", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.invitar);
+router.delete("/usuarios/invitaciones/:id", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.cancelarInvitacion);
+router.get("/usuarios/invitaciones/validar/:token", usuarioController.validarInvitacion);
+router.post("/usuarios/invitaciones/aceptar/:token", preregistroRateLimit, usuarioController.aceptarInvitacion);
 
 // Usuarios (HU1 · P02) — solo Administrador gestiona cuentas.
 router.get("/usuarios", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.listar);
@@ -34,6 +45,9 @@ router.patch("/usuarios/:id/estado", requireAuth, requireRole("ADMINISTRADOR"), 
 router.patch("/usuarios/:id/rol", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.cambiarRol);
 router.patch("/usuarios/me/password", requireAuth, usuarioController.cambiarPassword);
 router.patch("/usuarios/:id/password", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.restablecerPassword);
+
+// Auditoría — solo Administrador
+router.get("/auditoria", requireAuth, requireRole("ADMINISTRADOR"), auditoriaController.listar);
 
 // Dashboard (P01)
 router.get("/dashboard/modulos", requireAuth, dashboardController.modulos);

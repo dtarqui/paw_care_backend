@@ -19,6 +19,7 @@ export interface Usuario {
   apellidoPaterno: string;
   apellidoMaterno?: string;
   ci: string;
+  email?: string;
   telefono?: string;
   rol: Rol;
   estado: EstadoRegistro;
@@ -26,6 +27,27 @@ export interface Usuario {
 }
 
 export type UsuarioPublico = Omit<Usuario, "password">;
+
+export type AccionAuditoria = "ACTIVAR_CUENTA" | "DESACTIVAR_CUENTA" | "RESTABLECER_PASSWORD" | "CAMBIAR_ROL" | "INVITAR_VETERINARIO";
+
+export interface RegistroAuditoria {
+  id: number;
+  actor?: { nombre: string; apellidoPaterno: string };
+  accion: AccionAuditoria;
+  entidadTipo: string;
+  entidadId?: number;
+  detalle?: string;
+  fecha: string;
+}
+
+export interface InvitacionPendiente {
+  id: number;
+  email: string;
+  nombre?: string;
+  invitadoPor: { nombre: string; apellidoPaterno: string };
+  expiraEn: string;
+  createdAt: string;
+}
 
 export interface Veterinario {
   id: number;

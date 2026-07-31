@@ -1,7 +1,9 @@
 import bcrypt from "bcryptjs";
+import { auditoriaRepository } from "../repositories/auditoria.repository";
 import { usuarioRepository } from "../repositories/usuario.repository";
 import { veterinarioRepository } from "../repositories/veterinario.repository";
 import { Rol, UsuarioPublico } from "../types";
+import { esEmailValido } from "../utils/validacion";
 
 export class DatosDeUsuarioInvalidosError extends Error {
   constructor(mensaje: string) {
@@ -36,6 +38,7 @@ interface NuevoUsuarioInput {
   apellidoPaterno: string;
   apellidoMaterno?: string;
   ci: string;
+  email?: string;
   username: string;
   telefono?: string;
   rol: Rol;
@@ -44,7 +47,7 @@ interface NuevoUsuarioInput {
   especialidad?: string; // obligatorio si rol = VETERINARIO
 }
 
-function aPublico(usuario: { password: string } & UsuarioPublico): UsuarioPublico {
+export function aPublico(usuario: { password: string } & UsuarioPublico): UsuarioPublico {
   const { password: _password, ...publico } = usuario;
   return publico;
 }
@@ -68,6 +71,14 @@ export const usuarioService = {
     if (input.rol === "VETERINARIO" && (!input.matricula || !input.especialidad)) {
       throw new DatosDeUsuarioInvalidosError("Matrícula y especialidad son obligatorias para un Veterinario");
     }
+    if (input.email) {
+      if (!esEmailValido(input.email)) {
+        throw new DatosDeUsuarioInvalidosError("El email no es válido");
+      }
+      if (await usuarioRepository.findByEmail(input.email)) {
+        throw new UsuarioDuplicadoError("Ya existe un usuario registrado con ese email");
+      }
+    }
 
     const nuevoUsuario = await usuarioRepository.create({
       username: input.username,
@@ -76,6 +87,7 @@ export const usuarioService = {
       apellidoPaterno: input.apellidoPaterno,
       apellidoMaterno: input.apellidoMaterno,
       ci: input.ci,
+      email: input.email,
       telefono: input.telefono,
       rol: input.rol,
     });
@@ -102,6 +114,7 @@ export const usuarioService = {
     apellidoPaterno: string;
     apellidoMaterno?: string;
     ci: string;
+    email: string;
     username: string;
     telefono?: string;
     password: string;
@@ -112,12 +125,16 @@ export const usuarioService = {
       !input.nombre ||
       !input.apellidoPaterno ||
       !input.ci ||
+      !input.email ||
       !input.username ||
       !input.password ||
       !input.matricula ||
       !input.especialidad
     ) {
       throw new DatosDeUsuarioInvalidosError("Faltan campos obligatorios");
+    }
+    if (!esEmailValido(input.email)) {
+      throw new DatosDeUsuarioInvalidosError("El email no es válido");
     }
     if (input.password.length < 6) {
       throw new DatosDeUsuarioInvalidosError("La contraseña debe tener al menos 6 caracteres");
@@ -128,6 +145,9 @@ export const usuarioService = {
     if (await usuarioRepository.findByCi(input.ci)) {
       throw new UsuarioDuplicadoError("Ya existe un usuario registrado con ese CI");
     }
+    if (await usuarioRepository.findByEmail(input.email)) {
+      throw new UsuarioDuplicadoError("Ya existe un usuario registrado con ese email");
+    }
 
     const nuevoUsuario = await usuarioRepository.create({
       username: input.username,
@@ -136,6 +156,7 @@ export const usuarioService = {
       apellidoPaterno: input.apellidoPaterno,
       apellidoMaterno: input.apellidoMaterno,
       ci: input.ci,
+      email: input.email,
       telefono: input.telefono,
       rol: "VETERINARIO",
       estado: "INACTIVO",
@@ -167,23 +188,36 @@ export const usuarioService = {
   },
 
   /** Restablecimiento por un Administrador — para cuando un usuario perdió su
-   * contraseña y no puede iniciar sesión para cambiarla él mismo. No hay envío de
-   * email/SMS real en este proyecto (mismo motivo que HU11 Track B quedó fuera de
-   * alcance), así que el Admin le comunica la contraseña nueva directamente. */
-  async restablecerPassword(id: number, passwordNuevo: string): Promise<void> {
-    if (!(await usuarioRepository.findById(id))) {
+   * contraseña y no puede iniciar sesión para cambiarla él mismo (o no tiene email
+   * registrado y no puede usar la recuperación por correo). El Admin le comunica
+   * la contraseña nueva directamente — no se envía por email/SMS. */
+  async restablecerPassword(id: number, passwordNuevo: string, actorId?: number): Promise<void> {
+    const usuario = await usuarioRepository.findById(id);
+    if (!usuario) {
       throw new UsuarioNoEncontradoError();
     }
     if (passwordNuevo.length < 6) {
       throw new DatosDeUsuarioInvalidosError("La contraseña nueva debe tener al menos 6 caracteres");
     }
     await usuarioRepository.actualizarPassword(id, passwordNuevo);
+
+    if (actorId) {
+      await auditoriaRepository.registrar({
+        actorId,
+        accion: "RESTABLECER_PASSWORD",
+        entidadTipo: "Usuario",
+        entidadId: id,
+        detalle: `Contraseña restablecida para ${usuario.nombre} ${usuario.apellidoPaterno} (${usuario.username})`,
+      });
+    }
   },
 
-  async cambiarEstado(id: number, estado: "ACTIVO" | "INACTIVO"): Promise<UsuarioPublico> {
-    if (!(await usuarioRepository.findById(id))) {
+  async cambiarEstado(id: number, estado: "ACTIVO" | "INACTIVO", actorId?: number): Promise<UsuarioPublico> {
+    const usuario = await usuarioRepository.findById(id);
+    if (!usuario) {
       throw new UsuarioNoEncontradoError();
     }
+    const eraAprobacionPendiente = usuario.autorregistrado && usuario.estado === "INACTIVO" && estado === "ACTIVO";
     const actualizado = await usuarioRepository.actualizarEstado(id, estado);
 
     // Si tiene un Veterinario vinculado, se mantiene sincronizado — desactivar el
@@ -193,10 +227,27 @@ export const usuarioService = {
       await veterinarioRepository.actualizarEstado(veterinario.id, estado);
     }
 
+    if (actorId) {
+      const nombreCompleto = `${usuario.nombre} ${usuario.apellidoPaterno} (${usuario.username})`;
+      const detalle = eraAprobacionPendiente ? `Aprobación de preregistro de ${nombreCompleto}` : estado === "ACTIVO" ? `Reactivación de ${nombreCompleto}` : `Desactivación de ${nombreCompleto}`;
+      await auditoriaRepository.registrar({
+        actorId,
+        accion: estado === "ACTIVO" ? "ACTIVAR_CUENTA" : "DESACTIVAR_CUENTA",
+        entidadTipo: "Usuario",
+        entidadId: id,
+        detalle,
+      });
+    }
+
     return aPublico(actualizado);
   },
 
-  async cambiarRol(id: number, rol: Rol, datosVeterinario?: { matricula?: string; especialidad?: string }): Promise<UsuarioPublico> {
+  async cambiarRol(
+    id: number,
+    rol: Rol,
+    datosVeterinario?: { matricula?: string; especialidad?: string },
+    actorId?: number
+  ): Promise<UsuarioPublico> {
     const usuario = await usuarioRepository.findById(id);
     if (!usuario) {
       throw new UsuarioNoEncontradoError();
@@ -226,6 +277,17 @@ export const usuarioService = {
     }
 
     const actualizado = await usuarioRepository.actualizarRol(id, rol);
+
+    if (actorId) {
+      await auditoriaRepository.registrar({
+        actorId,
+        accion: "CAMBIAR_ROL",
+        entidadTipo: "Usuario",
+        entidadId: id,
+        detalle: `${usuario.nombre} ${usuario.apellidoPaterno} (${usuario.username}): ${usuario.rol} → ${rol}`,
+      });
+    }
+
     return aPublico(actualizado);
   },
 };

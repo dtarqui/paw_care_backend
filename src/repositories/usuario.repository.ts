@@ -13,6 +13,7 @@ function aDominio(row: UsuarioRow): Usuario {
     apellidoPaterno: row.apellidoPaterno,
     apellidoMaterno: row.apellidoMaterno ?? undefined,
     ci: row.ci,
+    email: row.email ?? undefined,
     telefono: row.telefono ?? undefined,
     rol: row.rol as Rol,
     estado: row.estado,
@@ -27,6 +28,7 @@ export interface NuevoUsuarioRegistro {
   apellidoPaterno: string;
   apellidoMaterno?: string;
   ci: string;
+  email?: string;
   telefono?: string;
   rol: Rol;
   estado?: EstadoRegistro; // default ACTIVO — usado en INACTIVO por el preregistro de veterinario
@@ -46,6 +48,11 @@ export const usuarioRepository = {
 
   async findByCi(ci: string): Promise<Usuario | undefined> {
     const row = await prisma.usuario.findUnique({ where: { ci } });
+    return row ? aDominio(row) : undefined;
+  },
+
+  async findByEmail(email: string): Promise<Usuario | undefined> {
+    const row = await prisma.usuario.findUnique({ where: { email } });
     return row ? aDominio(row) : undefined;
   },
 
@@ -72,6 +79,7 @@ export const usuarioRepository = {
         apellidoPaterno: input.apellidoPaterno,
         apellidoMaterno: input.apellidoMaterno,
         ci: input.ci,
+        email: input.email,
         telefono: input.telefono,
         rol: input.rol,
         estado: input.estado ?? "ACTIVO",

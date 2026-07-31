@@ -19,3 +19,13 @@ export const preregistroRateLimit = rateLimit({
   legacyHeaders: false,
   message: { error: "Demasiadas solicitudes de registro. Intenta de nuevo más tarde." },
 });
+
+// "Olvidé mi contraseña" es público y dispara un envío de email real — sin límite,
+// alguien podría usarlo para spamear la bandeja de un tercero repitiendo su username.
+export const forgotPasswordRateLimit = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Demasiadas solicitudes de recuperación. Intenta de nuevo más tarde." },
+});

@@ -71,6 +71,7 @@ model Usuario {
   ci              String          @unique @db.VarChar(20)
   username        String          @unique @db.VarChar(50)
   passwordHash    String
+  email           String?         @unique @db.VarChar(120)
   telefono        String?         @db.VarChar(20)
   direccion       String?
   rol             Rol
@@ -79,8 +80,11 @@ model Usuario {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
-  veterinario     Veterinario?
-  cambiosMascota  CambioMascota[]
+  veterinario         Veterinario?
+  cambiosMascota      CambioMascota[]
+  tokensRecuperacion  PasswordResetToken[]
+  invitacionesEnviadas InvitacionVeterinario[]
+  accionesAuditoria   RegistroAuditoria[]
 
   @@index([rol])
 }
@@ -290,4 +294,63 @@ model CambioMascota {
   usuario       Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
 
   @@index([mascotaId, fecha])
+}
+
+// Token de un solo uso para "olvidé mi contraseña" (POST /api/auth/forgot-password).
+// Vive fuera de Usuario porque puede haber varias solicitudes sin usar/expiradas
+// a la vez y se necesita el historial (usadoEn) para no reusar un token ya gastado.
+model PasswordResetToken {
+  id        Int       @id @default(autoincrement())
+  usuarioId Int
+  usuario   Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  expiraEn  DateTime
+  usadoEn   DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([usuarioId])
+}
+
+// Invitación de un Administrador a un Veterinario nuevo por email — alternativa al
+// preregistro público (POST /api/usuarios/preregistro): la cuenta creada al aceptar
+// queda ACTIVO de una (el Admin ya decidió invitar a esa persona), no pendiente de
+// aprobación. Convive con el preregistro abierto, no lo reemplaza.
+model InvitacionVeterinario {
+  id            Int       @id @default(autoincrement())
+  email         String    @db.VarChar(120)
+  nombre        String?   @db.VarChar(80)
+  token         String    @unique
+  invitadoPorId Int
+  invitadoPor   Usuario   @relation(fields: [invitadoPorId], references: [id], onDelete: Cascade)
+  expiraEn      DateTime
+  aceptadaEn    DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([invitadoPorId])
+  @@index([email])
+}
+
+enum AccionAuditoria {
+  ACTIVAR_CUENTA
+  DESACTIVAR_CUENTA
+  RESTABLECER_PASSWORD
+  CAMBIAR_ROL
+  INVITAR_VETERINARIO
+}
+
+// Bitácora de acciones administrativas sensibles sobre OTRAS cuentas — quién hizo
+// qué, sobre quién, cuándo. No registra acciones sobre el propio actor (ej. cambiar
+// tu propia contraseña no genera fila acá, eso no necesita auditoría).
+model RegistroAuditoria {
+  id          Int              @id @default(autoincrement())
+  actorId     Int?
+  actor       Usuario?         @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  accion      AccionAuditoria
+  entidadTipo String           @db.VarChar(40)
+  entidadId   Int?
+  detalle     String?
+  fecha       DateTime         @default(now())
+
+  @@index([fecha])
+  @@index([actorId])
 }

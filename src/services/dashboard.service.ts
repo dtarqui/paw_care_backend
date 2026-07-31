@@ -22,6 +22,7 @@ const MODULOS_POR_ROL: Record<Rol, ModuloDashboard[]> = {
     { id: "inventario", titulo: "Inventario", descripcion: "Stock de medicamentos", ruta: "/app/inventario", icono: "Package" },
     { id: "usuarios", titulo: "Usuarios", descripcion: "Registro y gestión de cuentas", ruta: "/app/usuarios", icono: "Users" },
     { id: "horarios", titulo: "Horarios", descripcion: "Horario semanal de atención por veterinario", ruta: "/app/horarios", icono: "Clock" },
+    { id: "auditoria", titulo: "Auditoría", descripcion: "Registro de acciones administrativas sensibles", ruta: "/app/auditoria", icono: "History" },
   ],
   VETERINARIO: [
     { id: "mascotas", titulo: "Mascotas", descripcion: "Buscar mascotas y ver historial", ruta: "/app/mascotas", icono: "PawPrint" },

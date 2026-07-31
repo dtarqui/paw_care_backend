@@ -1,11 +1,17 @@
 import { NextFunction, Request, Response } from "express";
-import { CredencialesInvalidasError } from "../services/auth.service";
+import { EmailNoConfiguradoError } from "../lib/mailer";
+import {
+  CredencialesInvalidasError,
+  DatosDeRecuperacionInvalidosError,
+  TokenDeRecuperacionInvalidoError,
+} from "../services/auth.service";
 import {
   AgendaAjenaError,
   CitaNoEncontradaError,
   ConflictoDeAgendaError,
   DatosDeCitaInvalidosError,
 } from "../services/cita.service";
+import { InvitacionInvalidaError } from "../services/invitacion.service";
 import { PagoInvalidoError } from "../services/pago.service";
 import {
   DatosDeUsuarioInvalidosError,
@@ -60,7 +66,10 @@ export function errorMiddleware(err: unknown, _req: Request, res: Response, _nex
     err instanceof DatosDeMedicamentoInvalidosError ||
     err instanceof DatosDeImportacionInvalidosError ||
     err instanceof DatosDePropietarioInvalidosError ||
-    err instanceof DatosDeHorarioInvalidosError
+    err instanceof DatosDeHorarioInvalidosError ||
+    err instanceof DatosDeRecuperacionInvalidosError ||
+    err instanceof TokenDeRecuperacionInvalidoError ||
+    err instanceof InvitacionInvalidaError
   ) {
     return res.status(400).json({ error: err.message });
   }
@@ -74,6 +83,10 @@ export function errorMiddleware(err: unknown, _req: Request, res: Response, _nex
     err instanceof MedicamentoDuplicadoError
   ) {
     return res.status(409).json({ error: err.message });
+  }
+  if (err instanceof EmailNoConfiguradoError) {
+    console.error(err);
+    return res.status(500).json({ error: err.message });
   }
 
   console.error(err);
