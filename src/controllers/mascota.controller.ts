@@ -7,7 +7,8 @@ import { leerPaginacion } from "../utils/pagination";
 export const mascotaController = {
   listar: asyncHandler(async (req: Request, res: Response) => {
     const { page, pageSize } = leerPaginacion(req);
-    const { items, total } = await mascotaService.listar(page, pageSize);
+    const soloActivas = req.query.activas !== "false";
+    const { items, total } = await mascotaService.listar(page, pageSize, soloActivas);
     res.json({ mascotas: items, total, page, pageSize });
   }),
 
@@ -38,5 +39,15 @@ export const mascotaController = {
   historial: asyncHandler(async (req: Request, res: Response) => {
     const id = Number(req.params.id);
     res.json({ eventos: await mascotaService.historial(id) });
+  }),
+
+  cambiarEstado: asyncHandler(async (req: Request, res: Response) => {
+    const id = Number(req.params.id);
+    const { estado } = req.body as { estado?: "ACTIVO" | "INACTIVO" };
+    if (estado !== "ACTIVO" && estado !== "INACTIVO") {
+      return res.status(400).json({ error: "El estado debe ser ACTIVO o INACTIVO" });
+    }
+    const mascota = await mascotaService.cambiarEstado(id, estado);
+    res.json({ mascota });
   }),
 };

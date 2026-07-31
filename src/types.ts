@@ -41,10 +41,12 @@ export interface Propietario {
   apellidoPaterno: string;
   ci: string;
   telefono: string;
+  direccion?: string;
 }
 
 export interface PropietarioConMascotas extends Propietario {
   cantidadMascotas: number;
+  mascotas: { id: number; nombre: string }[];
 }
 
 export interface Mascota {
@@ -55,6 +57,7 @@ export interface Mascota {
   sexo: "Macho" | "Hembra";
   fechaNacimiento: string;
   peso: number;
+  estado: EstadoRegistro;
   propietario: Propietario;
 }
 

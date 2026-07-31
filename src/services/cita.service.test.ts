@@ -11,7 +11,7 @@ const citaRepoMock = citaRepository as jest.Mocked<typeof citaRepository>;
 const mascotaRepoMock = mascotaRepository as jest.Mocked<typeof mascotaRepository>;
 const veterinarioRepoMock = veterinarioRepository as jest.Mocked<typeof veterinarioRepository>;
 
-const mascotaFalsa = { id: 1, nombre: "Coco", especie: "Perro", raza: "", sexo: "Macho" as const, fechaNacimiento: "", peso: 0, propietario: { id: 1, nombre: "Juan", apellidoPaterno: "Pérez", ci: "123", telefono: "" } };
+const mascotaFalsa = { id: 1, nombre: "Coco", especie: "Perro", raza: "", sexo: "Macho" as const, fechaNacimiento: "", peso: 0, estado: "ACTIVO" as const, propietario: { id: 1, nombre: "Juan", apellidoPaterno: "Pérez", ci: "123", telefono: "" } };
 const veterinarioFalso = { id: 2, usuarioId: 5, nombre: "Luis", apellidoPaterno: "Fernández", matricula: "VET-003", especialidad: "Dermatología" };
 
 const inputBase = {

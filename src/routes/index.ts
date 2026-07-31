@@ -46,6 +46,7 @@ router.post("/mascotas", requireAuth, mascotaController.crear);
 router.get("/mascotas/:id", requireAuth, mascotaController.detalle);
 router.patch("/mascotas/:id", requireAuth, mascotaController.actualizar);
 router.get("/mascotas/:id/historial", requireAuth, mascotaController.historial);
+router.patch("/mascotas/:id/estado", requireAuth, mascotaController.cambiarEstado);
 
 // Atención Médica (HU3 · P05)
 router.get("/mascotas/:id/atenciones", requireAuth, atencionController.historial);

@@ -1,7 +1,7 @@
 import { citaRepository } from "../repositories/cita.repository";
 import { mascotaRepository } from "../repositories/mascota.repository";
 import { propietarioRepository } from "../repositories/propietario.repository";
-import { EventoHistorialMascota, Mascota } from "../types";
+import { EstadoRegistro, EventoHistorialMascota, Mascota } from "../types";
 import { atencionService } from "./atencion.service";
 import { controlPreventivoService } from "./controlPreventivo.service";
 
@@ -60,8 +60,8 @@ const ETIQUETAS_CAMPO: Record<keyof ActualizarMascotaInput, string> = {
 };
 
 export const mascotaService = {
-  listar(page = 1, pageSize = 20) {
-    return mascotaRepository.findAllPaginado(page, pageSize);
+  listar(page = 1, pageSize = 20, soloActivas = true) {
+    return mascotaRepository.findAllPaginado(page, pageSize, soloActivas);
   },
 
   buscarPorCiPropietario(ci: string): Promise<Mascota[]> {
@@ -134,6 +134,13 @@ export const mascotaService = {
       await mascotaRepository.registrarCambios(id, cambiosLog, usuarioId);
     }
     return actualizada;
+  },
+
+  async cambiarEstado(id: number, estado: EstadoRegistro): Promise<Mascota> {
+    if (!(await mascotaRepository.findById(id))) {
+      throw new MascotaNoEncontradaError();
+    }
+    return mascotaRepository.actualizarEstado(id, estado);
   },
 
   async historial(id: number): Promise<EventoHistorialMascota[]> {

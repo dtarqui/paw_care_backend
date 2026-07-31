@@ -10,6 +10,7 @@ function aDominio(row: PropietarioRow): Propietario {
     apellidoPaterno: row.apellidoPaterno,
     ci: row.ci,
     telefono: row.telefono ?? "",
+    direccion: row.direccion ?? undefined,
   };
 }
 
@@ -31,9 +32,9 @@ export const propietarioRepository = {
   async findAll(): Promise<PropietarioConMascotas[]> {
     const rows = await prisma.propietario.findMany({
       orderBy: { id: "asc" },
-      include: { _count: { select: { mascotas: true } } },
+      include: { mascotas: { where: { estado: "ACTIVO" }, select: { id: true, nombre: true }, orderBy: { nombre: "asc" } } },
     });
-    return rows.map((row) => ({ ...aDominio(row), cantidadMascotas: row._count.mascotas }));
+    return rows.map((row) => ({ ...aDominio(row), cantidadMascotas: row.mascotas.length, mascotas: row.mascotas }));
   },
 
   async findById(id: number): Promise<Propietario | undefined> {
