@@ -16,18 +16,24 @@ import { reporteController } from "../controllers/reporte.controller";
 import { usuarioController } from "../controllers/usuario.controller";
 import { veterinarioController } from "../controllers/veterinario.controller";
 import { requireAuth, requireRole } from "../middlewares/auth.middleware";
-import { loginRateLimit } from "../middlewares/rateLimit.middleware";
+import { loginRateLimit, preregistroRateLimit } from "../middlewares/rateLimit.middleware";
 
 export const router = Router();
 
 // Auth (HU1) — sin requireAuth, es el punto de entrada.
 router.post("/auth/login", loginRateLimit, authController.login);
 
+// Preregistro público de Veterinario — sin requireAuth (igual que login); la cuenta
+// queda INACTIVO hasta que un Administrador la aprueba desde /app/usuarios.
+router.post("/usuarios/preregistro", preregistroRateLimit, usuarioController.preregistro);
+
 // Usuarios (HU1 · P02) — solo Administrador gestiona cuentas.
 router.get("/usuarios", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.listar);
 router.post("/usuarios", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.crear);
 router.patch("/usuarios/:id/estado", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.cambiarEstado);
 router.patch("/usuarios/:id/rol", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.cambiarRol);
+router.patch("/usuarios/me/password", requireAuth, usuarioController.cambiarPassword);
+router.patch("/usuarios/:id/password", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.restablecerPassword);
 
 // Dashboard (P01)
 router.get("/dashboard/modulos", requireAuth, dashboardController.modulos);

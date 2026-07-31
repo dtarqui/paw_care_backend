@@ -22,6 +22,7 @@ export interface Usuario {
   telefono?: string;
   rol: Rol;
   estado: EstadoRegistro;
+  autorregistrado: boolean;
 }
 
 export type UsuarioPublico = Omit<Usuario, "password">;

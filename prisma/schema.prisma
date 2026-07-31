@@ -75,6 +75,7 @@ model Usuario {
   direccion       String?
   rol             Rol
   estado          EstadoRegistro  @default(ACTIVO)
+  autorregistrado Boolean         @default(false)
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 

@@ -9,3 +9,13 @@ export const loginRateLimit = rateLimit({
   legacyHeaders: false,
   message: { error: "Demasiados intentos de inicio de sesión. Intenta de nuevo en unos minutos." },
 });
+
+// El preregistro de veterinario también es público (sin JWT) — mismo motivo que el
+// login, pero más laxo: es normal corregir un campo y reenviar el formulario varias veces.
+export const preregistroRateLimit = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Demasiadas solicitudes de registro. Intenta de nuevo más tarde." },
+});

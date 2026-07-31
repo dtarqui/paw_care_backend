@@ -16,6 +16,7 @@ function aDominio(row: UsuarioRow): Usuario {
     telefono: row.telefono ?? undefined,
     rol: row.rol as Rol,
     estado: row.estado,
+    autorregistrado: row.autorregistrado,
   };
 }
 
@@ -28,6 +29,8 @@ export interface NuevoUsuarioRegistro {
   ci: string;
   telefono?: string;
   rol: Rol;
+  estado?: EstadoRegistro; // default ACTIVO — usado en INACTIVO por el preregistro de veterinario
+  autorregistrado?: boolean;
 }
 
 export const usuarioRepository = {
@@ -71,7 +74,8 @@ export const usuarioRepository = {
         ci: input.ci,
         telefono: input.telefono,
         rol: input.rol,
-        estado: "ACTIVO",
+        estado: input.estado ?? "ACTIVO",
+        autorregistrado: input.autorregistrado ?? false,
       },
     });
     return aDominio(row);
@@ -85,5 +89,10 @@ export const usuarioRepository = {
   async actualizarRol(id: number, rol: Rol): Promise<Usuario> {
     const row = await prisma.usuario.update({ where: { id }, data: { rol } });
     return aDominio(row);
+  },
+
+  async actualizarPassword(id: number, passwordNuevo: string): Promise<void> {
+    const passwordHash = await bcrypt.hash(passwordNuevo, 10);
+    await prisma.usuario.update({ where: { id }, data: { passwordHash } });
   },
 };

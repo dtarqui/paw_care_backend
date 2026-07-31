@@ -7,7 +7,12 @@ import {
   DatosDeCitaInvalidosError,
 } from "../services/cita.service";
 import { PagoInvalidoError } from "../services/pago.service";
-import { DatosDeUsuarioInvalidosError, UsuarioDuplicadoError, UsuarioNoEncontradoError } from "../services/usuario.service";
+import {
+  DatosDeUsuarioInvalidosError,
+  PasswordActualIncorrectaError,
+  UsuarioDuplicadoError,
+  UsuarioNoEncontradoError,
+} from "../services/usuario.service";
 import { DatosDeMascotaInvalidosError, MascotaDuplicadaError, MascotaNoEncontradaError } from "../services/mascota.service";
 import { DatosDeAtencionInvalidosError } from "../services/atencion.service";
 import { DatosDeControlInvalidosError } from "../services/controlPreventivo.service";
@@ -27,7 +32,7 @@ import { DatosDeHorarioInvalidosError } from "../services/horario.service";
 // (clases propias) y aquí es el único lugar que los traduce a códigos HTTP.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function errorMiddleware(err: unknown, _req: Request, res: Response, _next: NextFunction) {
-  if (err instanceof CredencialesInvalidasError) {
+  if (err instanceof CredencialesInvalidasError || err instanceof PasswordActualIncorrectaError) {
     return res.status(401).json({ error: err.message });
   }
   if (err instanceof PagoInvalidoError) {

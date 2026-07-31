@@ -20,6 +20,7 @@ export interface NuevoVeterinarioRegistro {
   usuarioId: number;
   matricula: string;
   especialidad: string;
+  estado?: "ACTIVO" | "INACTIVO";
 }
 
 export const veterinarioRepository = {
