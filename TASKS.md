@@ -61,6 +61,22 @@
 
 **Todo lo del análisis de gaps está cerrado.**
 
+---
+
+## Correcciones y mejoras (sesión 3 — feedback de uso real)
+
+Tras usar la app en vivo, el usuario reportó un bug y varios huecos de producto. Todo lo siguiente está cerrado y verificado contra Supabase real:
+
+- [x] **Cambio de rol de usuario** — `PATCH /api/usuarios/:id/rol` (`requireRole('ADMINISTRADOR')`). `usuario.service.ts#cambiarRol`: si el nuevo rol es `VETERINARIO` y el usuario no tiene un `Veterinario` vinculado, exige `matricula`/`especialidad` y lo crea; si ya tenía uno (de un cambio de rol anterior), lo reactiva en vez de duplicarlo (`Veterinario.usuarioId` es único). Si deja de ser `VETERINARIO`, el registro `Veterinario` no se borra (FK `Restrict` desde `Cita`/`AtencionMedica`) — se desactiva, igual que ya hacía `cambiarEstado`.
+- [x] **CRUD completo de Medicamentos** — el descuento de stock por consumo en atención ya funcionaba (`atencion.service.ts` → `medicamentoService.consumirParaAtencion`); lo que faltaba era el catálogo. `POST /api/medicamentos` (crea, opcionalmente con `stockInicial` que genera un movimiento `ENTRADA`), `PATCH /api/medicamentos/:id` (nombre/stockMinimo — nunca `stockActual` directo, eso solo cambia vía entrada/consumo), `DELETE /api/medicamentos/:id` (bloqueado con 409 si el medicamento ya tiene `MovimientoInventario` asociados — `onDelete: Restrict`).
+- [x] **Historial de últimas transacciones** — `GET /api/pagos/historial?limit=5` (`pagoRepository.findRecientes`, con mascota/propietario incluidos) y `GET /api/recordatorios/historial?limit=5` (`notificacionRepository.findRecientesEnviados`, filtrando `Notificacion.estado = ENVIADO`). Antes solo existían las vistas de "pendientes".
+- [x] **Eliminar mascota (borrado lógico)** — igual que Usuario/Veterinario, se agregó `Mascota.estado: EstadoRegistro` (migración `20260731053116_mascota_estado`) porque un borrado físico choca con los FK `Restrict` de `Cita`/`AtencionMedica` en cuanto la mascota tiene cualquier historial. `PATCH /api/mascotas/:id/estado`. `GET /mascotas` filtra `ACTIVO` por defecto (`?activas=false` para incluir inactivas); `findByPropietarioCi` (usado por los buscadores de Atención Médica/Citas) también filtra activas; `detalle`/`findById` no filtran, para poder ver y reactivar una mascota inactiva desde su propia ficha.
+- [x] **Propietarios — datos completos** — `propietarioRepository.findAll()` ahora incluye `mascotas: {id, nombre}` (antes solo un `_count`) y expone `direccion` (existía en el schema desde el diseño original, pero nunca se leía ni se dejaba editar).
+
+**Bug corregido (solo frontend, sin cambios de API):** la grilla de Horarios reasignaba turno1/turno2 por orden de `horaInicio` al recargar en vez de por franja horaria real, así que un día con solo el turno de tarde activo aparecía marcado en el switch de "mañana". El backend no guarda una etiqueta de turno — sigue siendo una lista plana de bloques por día — el fix fue puramente de reconstrucción en el frontend (ver `frontend/TASKS.md`).
+
+**Datos demo regenerados:** `prisma/seed.ts` ahora empieza con un `deleteMany` en cascada FK-safe (antes asumía base vacía) y siembra el doble de contenido con nombres nuevos — 4 propietarios, 10 mascotas, 8 usuarios (6 veterinarios + admin/recepción, mismas credenciales), 10 citas, 8 controles preventivos, 10 medicamentos, 18 atenciones médicas. `admin`/`recepcion` mantienen username/contraseña documentados; solo cambiaron los nombres de persona.
+
 ## Tarea 00 — Setup del backend
 
 **Depende de:** nada (primera tarea).

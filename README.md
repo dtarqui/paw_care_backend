@@ -16,15 +16,18 @@ npm run dev                 # http://localhost:4000
 
 `npm run db:reset` borra y recrea todo (migraciones + seed) — útil solo en una base de desarrollo, nunca en producción.
 
-**Usuarios de demo** (creados por `prisma/seed.ts`):
+**Usuarios de demo** (creados por `prisma/seed.ts` — se regeneran, con nombres nuevos, cada vez que se corre `npm run db:seed`; esta tabla refleja la siembra actual):
 
 | Usuario | Contraseña | Rol |
 |---|---|---|
 | admin | admin123 | ADMINISTRADOR |
-| veterinario | vet123 | VETERINARIO (Luis Fernández) |
-| carlos.andrade | vet123 | VETERINARIO (Carlos Andrade) |
-| maria.rodriguez | vet123 | VETERINARIO (María Rodríguez) |
 | recepcion | recepcion123 | RECEPCIONISTA |
+| patricia.mendoza | vet123 | VETERINARIO (Medicina General) |
+| diego.herrera | vet123 | VETERINARIO (Dermatología) |
+| valeria.suarez | vet123 | VETERINARIO (Cirugía) |
+| andres.paredes | vet123 | VETERINARIO (Odontología) |
+| camila.rocha | vet123 | VETERINARIO (Oftalmología) |
+| sebastian.guzman | vet123 | VETERINARIO (Medicina General) |
 
 `GET /health` reporta el estado del servidor y de la conexión a la base de datos (`db.status`, `db.latenciaMs`).
 
