@@ -79,6 +79,10 @@ export const recordatorioService = {
     return resultado;
   },
 
+  historialEnviados(limit = 5) {
+    return notificacionRepository.findRecientesEnviados(limit);
+  },
+
   async marcarEnviado(id: string): Promise<void> {
     const [tipo, referenciaIdRaw] = id.split("-");
     const referenciaId = Number(referenciaIdRaw);

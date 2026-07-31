@@ -27,6 +27,7 @@ router.post("/auth/login", loginRateLimit, authController.login);
 router.get("/usuarios", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.listar);
 router.post("/usuarios", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.crear);
 router.patch("/usuarios/:id/estado", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.cambiarEstado);
+router.patch("/usuarios/:id/rol", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.cambiarRol);
 
 // Dashboard (P01)
 router.get("/dashboard/modulos", requireAuth, dashboardController.modulos);
@@ -66,6 +67,7 @@ router.put("/citas/:id", requireAuth, citaController.reprogramar);
 
 // Pagos (HU4 · P06)
 router.get("/pagos/pendientes", requireAuth, pagoController.listarPendientes);
+router.get("/pagos/historial", requireAuth, pagoController.historial);
 router.post("/pagos", requireAuth, pagoController.registrar);
 
 // Control Preventivo (HU6 · P08)
@@ -76,6 +78,9 @@ router.post("/controles-preventivos", requireAuth, controlPreventivoController.c
 // Inventario de Medicamentos (HU9 · P11) — solo Administrador
 router.get("/medicamentos", requireAuth, requireRole("ADMINISTRADOR"), medicamentoController.listar);
 router.get("/medicamentos/bajo-stock", requireAuth, requireRole("ADMINISTRADOR"), medicamentoController.bajoStock);
+router.post("/medicamentos", requireAuth, requireRole("ADMINISTRADOR"), medicamentoController.crear);
+router.patch("/medicamentos/:id", requireAuth, requireRole("ADMINISTRADOR"), medicamentoController.actualizar);
+router.delete("/medicamentos/:id", requireAuth, requireRole("ADMINISTRADOR"), medicamentoController.eliminar);
 router.post("/medicamentos/:id/entradas", requireAuth, requireRole("ADMINISTRADOR"), medicamentoController.registrarEntrada);
 
 // Reportes (HU7 · P09, HU8 · P10) — solo Administrador
@@ -86,6 +91,7 @@ router.get("/reportes/export/pdf", requireAuth, requireRole("ADMINISTRADOR"), re
 
 // Recordatorios WhatsApp — Fase 7, HU11 Track A (envío semi-manual vía enlace wa.me)
 router.get("/recordatorios/pendientes", requireAuth, recordatorioController.pendientes);
+router.get("/recordatorios/historial", requireAuth, recordatorioController.historial);
 router.post("/recordatorios/:id/marcar-enviado", requireAuth, recordatorioController.marcarEnviado);
 
 // Exportación completa — Fase 7, HU15 — solo Administrador

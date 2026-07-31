@@ -1,5 +1,5 @@
 import { prisma } from "../lib/prisma";
-import { MetodoPago, PagoPendiente } from "../types";
+import { MetodoPago, PagoHistorial, PagoPendiente } from "../types";
 import { dateToLiteral } from "../utils/date";
 
 export interface PagoRegistro {
@@ -52,6 +52,27 @@ export const pagoRepository = {
   async findAllRaw(): Promise<PagoRegistro[]> {
     const rows = await prisma.pago.findMany({ orderBy: { fecha: "desc" } });
     return rows.map(aDominio);
+  },
+
+  async findRecientes(limit: number): Promise<PagoHistorial[]> {
+    const rows = await prisma.pago.findMany({
+      orderBy: { fecha: "desc" },
+      take: limit,
+      include: { atencion: { include: { mascota: { include: { propietario: true } } } } },
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      atencionId: row.atencionId,
+      mascota: { id: row.atencion.mascota.id, nombre: row.atencion.mascota.nombre },
+      propietario: {
+        id: row.atencion.mascota.propietario.id,
+        nombre: row.atencion.mascota.propietario.nombre,
+        apellidoPaterno: row.atencion.mascota.propietario.apellidoPaterno,
+      },
+      metodoPago: row.metodoPago,
+      monto: Number(row.monto),
+      fecha: dateToLiteral(row.fecha),
+    }));
   },
 
   async registrar(input: NuevoPagoRegistro): Promise<PagoRegistro> {

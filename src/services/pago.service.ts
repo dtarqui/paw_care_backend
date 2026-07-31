@@ -14,6 +14,10 @@ export const pagoService = {
     return pagoRepository.findPendientes();
   },
 
+  historialReciente(limit = 5) {
+    return pagoRepository.findRecientes(limit);
+  },
+
   async registrar(atencionId: number, metodoPago: MetodoPago, monto: number) {
     if (!monto || monto <= 0) {
       throw new PagoInvalidoError("El monto debe ser mayor a 0");

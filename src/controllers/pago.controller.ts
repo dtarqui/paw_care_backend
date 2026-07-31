@@ -8,6 +8,11 @@ export const pagoController = {
     res.json({ pendientes: await pagoService.listarPendientes() });
   }),
 
+  historial: asyncHandler(async (req: Request, res: Response) => {
+    const limit = Number(req.query.limit) || 5;
+    res.json({ pagos: await pagoService.historialReciente(limit) });
+  }),
+
   registrar: asyncHandler(async (req: Request, res: Response) => {
     const { atencionId, metodoPago, monto } = req.body as {
       atencionId?: number;

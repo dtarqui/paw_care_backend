@@ -85,6 +85,16 @@ export interface PagoPendiente {
 
 export type EstadoPagoAtencion = "PENDIENTE" | "PAGADO";
 
+export interface PagoHistorial {
+  id: number;
+  atencionId: number;
+  mascota: Pick<Mascota, "id" | "nombre">;
+  propietario: Pick<Propietario, "id" | "nombre" | "apellidoPaterno">;
+  metodoPago: MetodoPago;
+  monto: number;
+  fecha: string;
+}
+
 export interface AtencionMedica {
   id: number;
   mascota: Pick<Mascota, "id" | "nombre" | "especie">;
@@ -138,6 +148,14 @@ export interface RecordatorioPendiente {
   propietario: { telefono: string; nombre: string; apellidoPaterno: string };
   mensaje: string;
   referencia: string; // ej. nombre de mascota + fecha, para mostrar en la UI
+}
+
+export interface RecordatorioEnviado {
+  id: number;
+  propietario: { nombre: string; apellidoPaterno: string };
+  mensaje: string;
+  canal: string;
+  enviadoEn: string;
 }
 
 export interface CambioMascota {

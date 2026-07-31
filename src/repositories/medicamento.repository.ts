@@ -14,7 +14,44 @@ export interface NuevoMovimientoRegistro {
   atencionId?: number;
 }
 
+export interface NuevoMedicamentoRegistro {
+  nombre: string;
+  stockMinimo: number;
+  stockActual?: number;
+}
+
+export interface CambiosMedicamento {
+  nombre?: string;
+  stockMinimo?: number;
+}
+
 export const medicamentoRepository = {
+  async findByNombre(nombre: string): Promise<Medicamento | undefined> {
+    const row = await prisma.medicamento.findUnique({ where: { nombre } });
+    return row ? aDominio(row) : undefined;
+  },
+
+  async create(input: NuevoMedicamentoRegistro): Promise<Medicamento> {
+    const row = await prisma.medicamento.create({
+      data: { nombre: input.nombre, stockMinimo: input.stockMinimo, stockActual: input.stockActual ?? 0 },
+    });
+    return aDominio(row);
+  },
+
+  async actualizar(id: number, cambios: CambiosMedicamento): Promise<Medicamento> {
+    const row = await prisma.medicamento.update({ where: { id }, data: cambios });
+    return aDominio(row);
+  },
+
+  async tieneMovimientos(id: number): Promise<boolean> {
+    const row = await prisma.movimientoInventario.findFirst({ where: { medicamentoId: id } });
+    return !!row;
+  },
+
+  async eliminar(id: number): Promise<void> {
+    await prisma.medicamento.delete({ where: { id } });
+  },
+
   async findAll(): Promise<Medicamento[]> {
     const rows = await prisma.medicamento.findMany({ orderBy: { nombre: "asc" } });
     return rows.map(aDominio);

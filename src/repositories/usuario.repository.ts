@@ -81,4 +81,9 @@ export const usuarioRepository = {
     const row = await prisma.usuario.update({ where: { id }, data: { estado } });
     return aDominio(row);
   },
+
+  async actualizarRol(id: number, rol: Rol): Promise<Usuario> {
+    const row = await prisma.usuario.update({ where: { id }, data: { rol } });
+    return aDominio(row);
+  },
 };

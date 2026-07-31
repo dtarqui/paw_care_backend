@@ -99,4 +99,37 @@ export const usuarioService = {
 
     return aPublico(actualizado);
   },
+
+  async cambiarRol(id: number, rol: Rol, datosVeterinario?: { matricula?: string; especialidad?: string }): Promise<UsuarioPublico> {
+    const usuario = await usuarioRepository.findById(id);
+    if (!usuario) {
+      throw new UsuarioNoEncontradoError();
+    }
+
+    const veterinarioVinculado = await veterinarioRepository.findByUsuarioId(id);
+
+    if (rol === "VETERINARIO") {
+      if (veterinarioVinculado) {
+        // Ya tuvo un registro de Veterinario antes (p.ej. se lo cambió de rol y ahora vuelve) — se reactiva
+        // en vez de crear uno duplicado (Veterinario.usuarioId es único).
+        await veterinarioRepository.actualizarEstado(veterinarioVinculado.id, "ACTIVO");
+      } else {
+        if (!datosVeterinario?.matricula || !datosVeterinario?.especialidad) {
+          throw new DatosDeUsuarioInvalidosError("Matrícula y especialidad son obligatorias para convertir a un usuario en Veterinario");
+        }
+        await veterinarioRepository.create({
+          usuarioId: id,
+          matricula: datosVeterinario.matricula,
+          especialidad: datosVeterinario.especialidad,
+        });
+      }
+    } else if (veterinarioVinculado) {
+      // Deja de ser veterinario: no se borra el registro (Cita/AtencionMedica lo referencian
+      // con onDelete Restrict) — se desactiva, igual que cambiarEstado, para sacarlo de los selects.
+      await veterinarioRepository.actualizarEstado(veterinarioVinculado.id, "INACTIVO");
+    }
+
+    const actualizado = await usuarioRepository.actualizarRol(id, rol);
+    return aPublico(actualizado);
+  },
 };
