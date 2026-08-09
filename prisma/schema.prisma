@@ -51,6 +51,13 @@ enum MetodoPago {
   QR
 }
 
+enum EstadoCobroQr {
+  PENDIENTE
+  CONFIRMADO
+  EXPIRADO
+  ERROR
+}
+
 enum CanalNotificacion {
   EMAIL
   WHATSAPP_MANUAL
@@ -201,6 +208,7 @@ model AtencionMedica {
 
   pago             Pago?
   movimientos      MovimientoInventario[]
+  cobrosQr         CobroQr[]
 
   @@index([mascotaId, fecha])
   @@index([estadoPago])
@@ -218,6 +226,28 @@ model Pago {
 
   @@index([fecha])
   @@index([metodoPago])
+}
+
+// Intento de cobro por QR bancario (riel "QR Simple" interoperable, vía la API propia
+// del banco comercial elegido — no una API única nacional). Una AtencionMedica puede
+// tener varios intentos (uno expira o falla, se genera otro) pero solo uno debería
+// llegar a CONFIRMADO; al confirmarse por webhook se crea el Pago real (mismo efecto
+// que registrar un pago manual con metodoPago QR), no lo reemplaza.
+model CobroQr {
+  id                Int           @id @default(autoincrement())
+  atencionId        Int
+  atencion          AtencionMedica @relation(fields: [atencionId], references: [id], onDelete: Restrict)
+  monto             Decimal       @db.Decimal(10, 2)
+  estado            EstadoCobroQr @default(PENDIENTE)
+  proveedor         String        @db.VarChar(40)
+  referenciaExterna String?       @unique @db.VarChar(100)
+  qrPayload         String?
+  expiraEn          DateTime?
+  confirmadoEn      DateTime?
+  createdAt         DateTime      @default(now())
+
+  @@index([atencionId])
+  @@index([estado])
 }
 
 model ControlPreventivo {

@@ -121,6 +121,20 @@ export interface PagoHistorial {
   fecha: string;
 }
 
+export type EstadoCobroQr = "PENDIENTE" | "CONFIRMADO" | "EXPIRADO" | "ERROR";
+
+export interface CobroQr {
+  id: number;
+  atencionId: number;
+  monto: number;
+  estado: EstadoCobroQr;
+  proveedor: string;
+  qrPayload?: string;
+  expiraEn?: string;
+  confirmadoEn?: string;
+  createdAt: string;
+}
+
 export interface AtencionMedica {
   id: number;
   mascota: Pick<Mascota, "id" | "nombre" | "especie">;

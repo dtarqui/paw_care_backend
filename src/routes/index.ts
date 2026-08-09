@@ -11,6 +11,7 @@ import { importacionController, uploadExcel } from "../controllers/importacion.c
 import { mascotaController } from "../controllers/mascota.controller";
 import { medicamentoController } from "../controllers/medicamento.controller";
 import { pagoController } from "../controllers/pago.controller";
+import { pagoQrController } from "../controllers/pagoQr.controller";
 import { propietarioController } from "../controllers/propietario.controller";
 import { recordatorioController } from "../controllers/recordatorio.controller";
 import { reporteController } from "../controllers/reporte.controller";
@@ -90,6 +91,14 @@ router.put("/citas/:id", requireAuth, citaController.reprogramar);
 router.get("/pagos/pendientes", requireAuth, pagoController.listarPendientes);
 router.get("/pagos/historial", requireAuth, pagoController.historial);
 router.post("/pagos", requireAuth, pagoController.registrar);
+
+// Cobro por QR bancario (sesión 6) — genera un QR real vía el banco elegido para
+// "QR Simple" (ver lib/pagoQr.ts, hoy sin conectar de verdad) y lo confirma cuando
+// el banco notifica el pago. El webhook es público: lo llama el banco, no un
+// usuario logueado — se protege con un secreto compartido, no con JWT.
+router.post("/pagos/qr", requireAuth, pagoQrController.generar);
+router.get("/pagos/qr/:id", requireAuth, pagoQrController.consultar);
+router.post("/pagos/qr/webhook", pagoQrController.webhook);
 
 // Control Preventivo (HU6 · P08)
 router.get("/mascotas/:id/controles-preventivos", requireAuth, controlPreventivoController.historial);
