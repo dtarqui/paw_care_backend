@@ -5,7 +5,10 @@ import { asyncHandler } from "../utils/asyncHandler";
 
 export const dashboardController = {
   modules: asyncHandler(async (req: AuthRequest, res: Response) => {
-    const modules = dashboardService.modulesFor(req.user!.role);
-    res.json({ modules });
+    const role = req.user!.role;
+    res.json({
+      modules: dashboardService.modulesFor(role),
+      groups: dashboardService.groupsFor(role),
+    });
   }),
 };
