@@ -135,6 +135,16 @@ Refactor transversal de nomenclatura, sin cambios funcionales: **todo identifica
 
 ---
 
+## Correcciones y mejoras (sesión 11 — búsqueda global)
+
+- [x] **`GET /api/search?q=`** (`requireAuth`) — una sola caja que resuelve "¿quién es Rocky?" sin saber de antemano en qué pantalla mirar. Los endpoints que ya existían (`/pets/search`, `/owners/search`) solo buscan por CI **exacto**, así que combinarlos desde el frontend no servía: hacía falta coincidencia parcial por nombre.
+- [x] **Extensible por composición, no por modificación** — `SearchProvider` (`services/search/searchProvider.ts`) define el contrato (`type`, `search(term, limit)`), `pet.searchProvider.ts` y `owner.searchProvider.ts` lo implementan, y `search.service.ts` los registra en un arreglo y los consulta en paralelo. **Agregar medicamentos o citas a la búsqueda es escribir un proveedor y sumarlo a esa lista** — el servicio, el controlador y la ruta quedan intactos. Cada proveedor mapea su entidad a `SearchResult` (título, subtítulo, ruta del frontend), así que el consumidor no conoce ninguna entidad concreta.
+- [x] **Métodos de repositorio nuevos**: `petRepository.searchByName` (parcial, insensible a mayúsculas, solo `ACTIVE`) y `ownerRepository.searchByNameOrNationalId` (nombre, apellido o CI). El acceso a Prisma sigue confinado a la capa de repositorios.
+- [x] **Umbral de 2 caracteres y tope de 5 por tipo** — por debajo de 2 no se consulta (cualquier letra traería media base); el tope evita que un término genérico devuelva cientos de filas a un cuadro de salto rápido.
+- [x] **Probado contra Supabase real**: mascota por fragmento ("roc" → Rocky), propietario por apellido ("vargas") y por CI ("5551002"), término corto ("a" → vacío), sin coincidencias ("zzz" → vacío), resultados de ambos tipos ordenados con mascotas primero, y 401 sin token.
+
+---
+
 ## Tarea 00 — Setup del backend
 
 **Depende de:** nada (primera tarea).

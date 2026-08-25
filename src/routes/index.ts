@@ -15,6 +15,7 @@ import { qrPaymentController } from "../controllers/qrPayment.controller";
 import { reminderController } from "../controllers/reminder.controller";
 import { reportController } from "../controllers/report.controller";
 import { scheduleController } from "../controllers/schedule.controller";
+import { searchController } from "../controllers/search.controller";
 import { userController } from "../controllers/user.controller";
 import { vetController } from "../controllers/vet.controller";
 import { requireAuth, requireRole } from "../middlewares/auth.middleware";
@@ -55,6 +56,11 @@ router.patch("/users/:id/password", requireAuth, requireRole("ADMIN"), userContr
 
 // Auditoría — solo Administrador
 router.get("/audit-logs", requireAuth, requireRole("ADMIN"), auditLogController.list);
+
+// Búsqueda global (Ctrl/Cmd+K) — una sola caja que resuelve "¿quién es Rocky?" sin
+// saber de antemano en qué pantalla mirar. Qué entidades cubre lo definen los
+// proveedores registrados en services/search/search.service.ts.
+router.get("/search", requireAuth, searchController.search);
 
 // Dashboard (P01)
 router.get("/dashboard/modules", requireAuth, dashboardController.modules);

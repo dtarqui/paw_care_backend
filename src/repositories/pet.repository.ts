@@ -74,6 +74,18 @@ export const petRepository = {
     return rows.map(toDomain);
   },
 
+  /** Coincidencia parcial por nombre, para la búsqueda global. Solo mascotas
+   * activas: una mascota dada de baja no es un destino útil al que saltar. */
+  async searchByName(term: string, limit: number): Promise<Pet[]> {
+    const rows = await prisma.pet.findMany({
+      where: { status: "ACTIVE", name: { contains: term, mode: "insensitive" } },
+      include,
+      orderBy: { name: "asc" },
+      take: limit,
+    });
+    return rows.map(toDomain);
+  },
+
   async existsForOwner(ownerId: number, name: string, species: string): Promise<boolean> {
     const row = await prisma.pet.findFirst({
       where: {

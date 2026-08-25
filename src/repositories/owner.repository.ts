@@ -45,6 +45,23 @@ export const ownerRepository = {
   async findByNationalId(nationalId: string): Promise<Owner | undefined> {
     const row = await prisma.owner.findUnique({ where: { nationalId } });
     return row ? toDomain(row) : undefined;
+  }, 
+
+  /** Coincidencia parcial por nombre, apellido o CI — las tres formas en que se
+   * identifica a un cliente en el mostrador. */
+  async searchByNameOrNationalId(term: string, limit: number): Promise<Owner[]> {
+    const rows = await prisma.owner.findMany({
+      where: {
+        OR: [
+          { firstName: { contains: term, mode: "insensitive" } },
+          { paternalLastName: { contains: term, mode: "insensitive" } },
+          { nationalId: { contains: term } },
+        ],
+      },
+      orderBy: [{ paternalLastName: "asc" }, { firstName: "asc" }],
+      take: limit,
+    });
+    return rows.map(toDomain);
   },
 
   async create(input: NewOwnerRecord): Promise<Owner> {
