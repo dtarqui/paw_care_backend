@@ -14,22 +14,22 @@ npm run db:seed             # siembra los datos de demo (opcional, pero recomend
 npm run dev                 # http://localhost:4000
 ```
 
-`npm run db:reset` borra y recrea todo (migraciones + seed) — útil solo en una base de desarrollo, nunca en producción.
+`npm run db:reset` dropea **solo** las tablas `st_*` y los enums de PawCare (`prisma/reset.ts`) y luego indica correr `npx prisma migrate deploy && npx prisma db seed`. No usa `prisma migrate reset`: el schema `public` está compartido con otro proyecto (tablas `mt_*`, con datos reales) y un reset completo las destruiría. Por el mismo motivo, para una migración nueva usá `prisma migrate diff` + `prisma migrate deploy`, nunca `prisma migrate dev`.
 
 **Usuarios de demo** (creados por `prisma/seed.ts` — se regeneran, con nombres nuevos, cada vez que se corre `npm run db:seed`; esta tabla refleja la siembra actual):
 
 | Usuario | Contraseña | Rol |
 |---|---|---|
-| admin | admin123 | ADMINISTRADOR |
-| recepcion | recepcion123 | RECEPCIONISTA |
-| patricia.mendoza | vet123 | VETERINARIO (Medicina General) |
-| diego.herrera | vet123 | VETERINARIO (Dermatología) |
-| valeria.suarez | vet123 | VETERINARIO (Cirugía) |
-| andres.paredes | vet123 | VETERINARIO (Odontología) |
-| camila.rocha | vet123 | VETERINARIO (Oftalmología) |
-| sebastian.guzman | vet123 | VETERINARIO (Medicina General) |
+| admin | admin123 | ADMIN |
+| recepcion | recepcion123 | RECEPTIONIST |
+| patricia.mendoza | vet123 | VET (Medicina General) |
+| diego.herrera | vet123 | VET (Dermatología) |
+| valeria.suarez | vet123 | VET (Cirugía) |
+| andres.paredes | vet123 | VET (Odontología) |
+| camila.rocha | vet123 | VET (Oftalmología) |
+| sebastian.guzman | vet123 | VET (Medicina General) |
 
-`GET /health` reporta el estado del servidor y de la conexión a la base de datos (`db.status`, `db.latenciaMs`).
+`GET /health` reporta el estado del servidor y de la conexión a la base de datos (`db.status`, `db.latencyMs`).
 
 ## Estructura
 

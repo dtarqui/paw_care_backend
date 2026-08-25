@@ -1,28 +1,28 @@
 import crypto from "crypto";
 import { prisma } from "../lib/prisma";
 
-export interface TokenRecuperacion {
+export interface PasswordResetTokenRecord {
   id: number;
-  usuarioId: number;
+  userId: number;
   token: string;
 }
 
 export const passwordResetTokenRepository = {
-  async crear(usuarioId: number, minutosValidez = 60): Promise<string> {
+  async create(userId: number, validityMinutes = 60): Promise<string> {
     const token = crypto.randomBytes(32).toString("hex");
-    const expiraEn = new Date(Date.now() + minutosValidez * 60_000);
-    await prisma.passwordResetToken.create({ data: { usuarioId, token, expiraEn } });
+    const expiresAt = new Date(Date.now() + validityMinutes * 60_000);
+    await prisma.passwordResetToken.create({ data: { userId, token, expiresAt } });
     return token;
   },
 
   /** Solo devuelve el token si sigue vigente (no usado y no vencido). */
-  async findValido(token: string): Promise<TokenRecuperacion | undefined> {
+  async findValid(token: string): Promise<PasswordResetTokenRecord | undefined> {
     const row = await prisma.passwordResetToken.findUnique({ where: { token } });
-    if (!row || row.usadoEn || row.expiraEn < new Date()) return undefined;
-    return { id: row.id, usuarioId: row.usuarioId, token: row.token };
+    if (!row || row.usedAt || row.expiresAt < new Date()) return undefined;
+    return { id: row.id, userId: row.userId, token: row.token };
   },
 
-  async marcarUsado(id: number): Promise<void> {
-    await prisma.passwordResetToken.update({ where: { id }, data: { usadoEn: new Date() } });
+  async markUsed(id: number): Promise<void> {
+    await prisma.passwordResetToken.update({ where: { id }, data: { usedAt: new Date() } });
   },
 };

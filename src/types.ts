@@ -1,217 +1,226 @@
-// Tipos compartidos del modo demo. Reflejan el modelo de datos real
-// documentado en database/MODELO_DATOS.md (versión reducida, sin Prisma).
+// Tipos de transporte de la API (lo que viaja en el JSON hacia el frontend).
+// Reflejan el modelo de datos real documentado en database/MODELO_DATOS.md.
+//
+// Convención del proyecto: identificadores en INGLÉS, textos visibles en ESPAÑOL
+// (esos viven en la UI del frontend y en los mensajes de error de los servicios).
+// Ver docs/GLOSARIO_EN_ES.md para el mapa completo inglés -> español.
 
-export interface Paginado<T> {
+export interface Paginated<T> {
   items: T[];
   total: number;
   page: number;
   pageSize: number;
 }
 
-export type Rol = "ADMINISTRADOR" | "VETERINARIO" | "RECEPCIONISTA";
-export type EstadoRegistro = "ACTIVO" | "INACTIVO";
+export type Role = "ADMIN" | "VET" | "RECEPTIONIST";
+export type RecordStatus = "ACTIVE" | "INACTIVE";
 
-export interface Usuario {
+export interface User {
   id: number;
   username: string;
-  password: string; // texto plano SOLO en el modo demo — el real usa bcrypt (ver TASKS.md)
-  nombre: string;
-  apellidoPaterno: string;
-  apellidoMaterno?: string;
-  ci: string;
+  passwordHash: string; // hash de bcrypt — nunca texto plano (ver auth.service.ts)
+  firstName: string;
+  paternalLastName: string;
+  maternalLastName?: string;
+  nationalId: string;
   email?: string;
-  telefono?: string;
-  rol: Rol;
-  estado: EstadoRegistro;
-  autorregistrado: boolean;
+  phone?: string;
+  role: Role;
+  status: RecordStatus;
+  selfRegistered: boolean;
 }
 
-export type UsuarioPublico = Omit<Usuario, "password">;
+export type PublicUser = Omit<User, "passwordHash">;
 
-export type AccionAuditoria = "ACTIVAR_CUENTA" | "DESACTIVAR_CUENTA" | "RESTABLECER_PASSWORD" | "CAMBIAR_ROL" | "INVITAR_VETERINARIO";
+export type AuditAction =
+  | "ACTIVATE_ACCOUNT"
+  | "DEACTIVATE_ACCOUNT"
+  | "RESET_PASSWORD"
+  | "CHANGE_ROLE"
+  | "INVITE_VET";
 
-export interface RegistroAuditoria {
+export interface AuditLog {
   id: number;
-  actor?: { nombre: string; apellidoPaterno: string };
-  accion: AccionAuditoria;
-  entidadTipo: string;
-  entidadId?: number;
-  detalle?: string;
-  fecha: string;
+  actor?: { firstName: string; paternalLastName: string };
+  action: AuditAction;
+  entityType: string;
+  entityId?: number;
+  details?: string;
+  date: string;
 }
 
-export interface InvitacionPendiente {
+export interface PendingInvitation {
   id: number;
   email: string;
-  nombre?: string;
-  invitadoPor: { nombre: string; apellidoPaterno: string };
-  expiraEn: string;
+  name?: string;
+  invitedBy: { firstName: string; paternalLastName: string };
+  expiresAt: string;
   createdAt: string;
 }
 
-export interface Veterinario {
+export interface Vet {
   id: number;
-  usuarioId?: number; // vincula con Usuario.id cuando el veterinario tiene cuenta de acceso (ver database/MODELO_DATOS.md)
-  nombre: string;
-  apellidoPaterno: string;
-  matricula: string;
-  especialidad: string;
+  userId?: number; // vincula con User.id cuando el veterinario tiene cuenta de acceso
+  firstName: string;
+  paternalLastName: string;
+  licenseNumber: string;
+  specialty: string;
 }
 
-export interface Propietario {
+export interface Owner {
   id: number;
-  nombre: string;
-  apellidoPaterno: string;
-  ci: string;
-  telefono: string;
-  direccion?: string;
+  firstName: string;
+  paternalLastName: string;
+  nationalId: string;
+  phone: string;
+  address?: string;
 }
 
-export interface PropietarioConMascotas extends Propietario {
-  cantidadMascotas: number;
-  mascotas: { id: number; nombre: string }[];
+export interface OwnerWithPets extends Owner {
+  petCount: number;
+  pets: { id: number; name: string }[];
 }
 
-export interface Mascota {
+export interface Pet {
   id: number;
-  nombre: string;
-  especie: string;
-  raza: string;
-  sexo: "Macho" | "Hembra";
-  fechaNacimiento: string;
-  peso: number;
-  estado: EstadoRegistro;
-  propietario: Propietario;
+  name: string;
+  species: string;
+  breed: string;
+  sex: "Macho" | "Hembra";
+  birthDate: string;
+  weight: number;
+  status: RecordStatus;
+  owner: Owner;
 }
 
-export type EstadoCita = "CONFIRMADA" | "ATENDIDA" | "CANCELADA";
+export type AppointmentStatus = "CONFIRMED" | "ATTENDED" | "CANCELLED";
 
-export interface Cita {
+export interface Appointment {
   id: number;
-  codigo: string;
-  fechaHora: string; // ISO
-  duracionMin: number;
-  mascota: Pick<Mascota, "id" | "nombre" | "especie">;
-  veterinario: Pick<Veterinario, "id" | "nombre" | "apellidoPaterno">;
-  tipoConsulta: string;
-  motivo: string;
-  estado: EstadoCita;
+  code: string;
+  dateTime: string; // ISO
+  durationMin: number;
+  pet: Pick<Pet, "id" | "name" | "species">;
+  vet: Pick<Vet, "id" | "firstName" | "paternalLastName">;
+  consultationType: string;
+  reason: string;
+  status: AppointmentStatus;
 }
 
-export type MetodoPago = "EFECTIVO" | "TARJETA" | "TRANSFERENCIA" | "QR";
+export type PaymentMethod = "CASH" | "CARD" | "TRANSFER" | "QR";
 
-export interface PagoPendiente {
-  atencionId: number;
-  mascota: Pick<Mascota, "id" | "nombre">;
-  propietario: Pick<Propietario, "id" | "nombre" | "apellidoPaterno">;
-  motivoConsulta: string;
-  monto: number;
-  fecha: string;
+export interface PendingPayment {
+  visitId: number;
+  pet: Pick<Pet, "id" | "name">;
+  owner: Pick<Owner, "id" | "firstName" | "paternalLastName">;
+  consultationReason: string;
+  amount: number;
+  date: string;
 }
 
-export type EstadoPagoAtencion = "PENDIENTE" | "PAGADO";
+export type VisitPaymentStatus = "PENDING" | "PAID";
 
-export interface PagoHistorial {
+export interface PaymentHistoryEntry {
   id: number;
-  atencionId: number;
-  mascota: Pick<Mascota, "id" | "nombre">;
-  propietario: Pick<Propietario, "id" | "nombre" | "apellidoPaterno">;
-  metodoPago: MetodoPago;
-  monto: number;
-  fecha: string;
+  visitId: number;
+  pet: Pick<Pet, "id" | "name">;
+  owner: Pick<Owner, "id" | "firstName" | "paternalLastName">;
+  method: PaymentMethod;
+  amount: number;
+  date: string;
 }
 
-export type EstadoCobroQr = "PENDIENTE" | "CONFIRMADO" | "EXPIRADO" | "ERROR";
+export type QrChargeStatus = "PENDING" | "CONFIRMED" | "EXPIRED" | "ERROR";
 
-export interface CobroQr {
+export interface QrCharge {
   id: number;
-  atencionId: number;
-  monto: number;
-  estado: EstadoCobroQr;
-  proveedor: string;
+  visitId: number;
+  amount: number;
+  status: QrChargeStatus;
+  provider: string;
   qrPayload?: string;
-  expiraEn?: string;
-  confirmadoEn?: string;
+  expiresAt?: string;
+  confirmedAt?: string;
   createdAt: string;
 }
 
-export interface AtencionMedica {
+export interface MedicalVisit {
   id: number;
-  mascota: Pick<Mascota, "id" | "nombre" | "especie">;
-  veterinario: Pick<Veterinario, "id" | "nombre" | "apellidoPaterno">;
-  fecha: string;
-  tipoServicio: string;
-  diagnostico: string;
-  tratamiento: string;
-  examenesExternos?: string;
-  peso?: number;
-  montoConsulta: number;
-  estadoPago: EstadoPagoAtencion;
+  pet: Pick<Pet, "id" | "name" | "species">;
+  vet: Pick<Vet, "id" | "firstName" | "paternalLastName">;
+  date: string;
+  serviceType: string;
+  diagnosis: string;
+  treatment: string;
+  externalExams?: string;
+  weight?: number;
+  consultationFee: number;
+  paymentStatus: VisitPaymentStatus;
 }
 
-export type TipoControlPreventivo = "VACUNA" | "DESPARASITACION";
+export type PreventiveControlType = "VACCINE" | "DEWORMING";
 
-export interface ControlPreventivo {
+export interface PreventiveControl {
   id: number;
-  mascota: Pick<Mascota, "id" | "nombre" | "especie">;
-  tipo: TipoControlPreventivo;
-  fechaAplicacion: string;
-  proximaDosis: string;
-  vencido: boolean;
+  pet: Pick<Pet, "id" | "name" | "species">;
+  type: PreventiveControlType;
+  appliedOn: string;
+  nextDoseOn: string;
+  overdue: boolean;
 }
 
-export interface Medicamento {
+export interface Medication {
   id: number;
-  nombre: string;
-  stockActual: number;
-  stockMinimo: number;
+  name: string;
+  currentStock: number;
+  minimumStock: number;
 }
 
-export type TipoMovimientoInventario = "ENTRADA" | "SALIDA";
+export type InventoryMoveType = "IN" | "OUT";
 
-export interface MovimientoInventario {
+export interface InventoryMove {
   id: number;
-  medicamento: Pick<Medicamento, "id" | "nombre">;
-  tipo: TipoMovimientoInventario;
-  cantidad: number;
-  fecha: string;
-  atencionId?: number;
+  medication: Pick<Medication, "id" | "name">;
+  type: InventoryMoveType;
+  quantity: number;
+  date: string;
+  visitId?: number;
 }
 
-export type CanalNotificacion = "WHATSAPP_MANUAL";
-export type EstadoNotificacion = "PENDIENTE" | "ENVIADO";
-export type TipoRecordatorio = "CITA" | "CONTROL_PREVENTIVO";
+export type NotificationChannel = "WHATSAPP_MANUAL";
+export type NotificationStatus = "PENDING" | "SENT";
+export type ReminderType = "APPOINTMENT" | "PREVENTIVE_CONTROL";
 
-export interface RecordatorioPendiente {
-  id: string; // compuesto: `${tipo}-${referenciaId}`, no requiere tabla propia
-  tipo: TipoRecordatorio;
-  propietario: { telefono: string; nombre: string; apellidoPaterno: string };
-  mensaje: string;
-  referencia: string; // ej. nombre de mascota + fecha, para mostrar en la UI
+export interface PendingReminder {
+  id: string; // compuesto: `${type}-${referenceId}`, no requiere tabla propia
+  type: ReminderType;
+  owner: { phone: string; firstName: string; paternalLastName: string };
+  message: string;
+  reference: string; // ej. nombre de mascota + fecha, para mostrar en la UI
 }
 
-export interface RecordatorioEnviado {
+export interface SentReminder {
   id: number;
-  propietario: { nombre: string; apellidoPaterno: string };
-  mensaje: string;
-  canal: string;
-  enviadoEn: string;
+  owner: { firstName: string; paternalLastName: string };
+  message: string;
+  channel: string;
+  sentAt: string;
 }
 
-export interface CambioMascota {
+export interface PetChange {
   id: number;
-  campo: string;
-  valorAnterior?: string;
-  valorNuevo?: string;
-  fecha: string;
-  usuario?: string; // nombre completo de quien hizo el cambio, si la cuenta sigue existiendo
+  field: string;
+  oldValue?: string;
+  newValue?: string;
+  date: string;
+  user?: string; // nombre completo de quien hizo el cambio, si la cuenta sigue existiendo
 }
 
 // Ficha individual de mascota: línea de tiempo unificada (atenciones, controles
 // preventivos, citas y ediciones manuales), cada evento resuelto a su tipo real
 // para que el frontend no tenga que adivinar la forma del payload.
-export type EventoHistorialMascota =
-  | { tipo: "ATENCION"; fecha: string; atencion: AtencionMedica }
-  | { tipo: "CONTROL"; fecha: string; control: ControlPreventivo }
-  | { tipo: "CITA"; fecha: string; cita: Cita }
-  | { tipo: "CAMBIO"; fecha: string; cambio: CambioMascota };
+export type PetHistoryEvent =
+  | { type: "VISIT"; date: string; visit: MedicalVisit }
+  | { type: "PREVENTIVE_CONTROL"; date: string; control: PreventiveControl }
+  | { type: "APPOINTMENT"; date: string; appointment: Appointment }
+  | { type: "CHANGE"; date: string; change: PetChange };

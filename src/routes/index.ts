@@ -1,131 +1,137 @@
 import { Router } from "express";
-import { atencionController } from "../controllers/atencion.controller";
-import { auditoriaController } from "../controllers/auditoria.controller";
+import { appointmentController } from "../controllers/appointment.controller";
+import { auditLogController } from "../controllers/auditLog.controller";
 import { authController } from "../controllers/auth.controller";
-import { citaController } from "../controllers/cita.controller";
-import { controlPreventivoController } from "../controllers/controlPreventivo.controller";
 import { dashboardController } from "../controllers/dashboard.controller";
-import { exportacionController } from "../controllers/exportacion.controller";
-import { horarioController } from "../controllers/horario.controller";
-import { importacionController, uploadExcel } from "../controllers/importacion.controller";
-import { mascotaController } from "../controllers/mascota.controller";
-import { medicamentoController } from "../controllers/medicamento.controller";
-import { pagoController } from "../controllers/pago.controller";
-import { pagoQrController } from "../controllers/pagoQr.controller";
-import { propietarioController } from "../controllers/propietario.controller";
-import { recordatorioController } from "../controllers/recordatorio.controller";
-import { reporteController } from "../controllers/reporte.controller";
-import { usuarioController } from "../controllers/usuario.controller";
-import { veterinarioController } from "../controllers/veterinario.controller";
+import { exportController } from "../controllers/export.controller";
+import { importController, uploadExcel } from "../controllers/import.controller";
+import { medicalVisitController } from "../controllers/medicalVisit.controller";
+import { medicationController } from "../controllers/medication.controller";
+import { ownerController } from "../controllers/owner.controller";
+import { paymentController } from "../controllers/payment.controller";
+import { petController } from "../controllers/pet.controller";
+import { preventiveControlController } from "../controllers/preventiveControl.controller";
+import { qrPaymentController } from "../controllers/qrPayment.controller";
+import { reminderController } from "../controllers/reminder.controller";
+import { reportController } from "../controllers/report.controller";
+import { scheduleController } from "../controllers/schedule.controller";
+import { userController } from "../controllers/user.controller";
+import { vetController } from "../controllers/vet.controller";
 import { requireAuth, requireRole } from "../middlewares/auth.middleware";
-import { forgotPasswordRateLimit, loginRateLimit, preregistroRateLimit } from "../middlewares/rateLimit.middleware";
+import {
+  forgotPasswordRateLimit,
+  loginRateLimit,
+  preRegistrationRateLimit,
+} from "../middlewares/rateLimit.middleware";
 
 export const router = Router();
 
 // Auth (HU1) — sin requireAuth, es el punto de entrada.
 router.post("/auth/login", loginRateLimit, authController.login);
-router.post("/auth/forgot-password", forgotPasswordRateLimit, authController.solicitarRecuperacion);
-router.post("/auth/reset-password", forgotPasswordRateLimit, authController.restablecerConToken);
+router.post("/auth/forgot-password", forgotPasswordRateLimit, authController.requestPasswordRecovery);
+router.post("/auth/reset-password", forgotPasswordRateLimit, authController.resetWithToken);
 
 // Preregistro público de Veterinario — sin requireAuth (igual que login); la cuenta
-// queda INACTIVO hasta que un Administrador la aprueba desde /app/usuarios.
-router.post("/usuarios/preregistro", preregistroRateLimit, usuarioController.preregistro);
+// queda INACTIVE hasta que un Administrador la aprueba desde /app/users.
+router.post("/users/pre-register", preRegistrationRateLimit, userController.preRegister);
 
 // Invitación de Veterinario por un Administrador — convive con el preregistro público
 // de arriba. Validar/aceptar son públicos (la persona invitada todavía no tiene cuenta).
-router.get("/usuarios/invitaciones", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.listarInvitaciones);
-router.post("/usuarios/invitaciones", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.invitar);
-router.delete("/usuarios/invitaciones/:id", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.cancelarInvitacion);
-router.get("/usuarios/invitaciones/validar/:token", usuarioController.validarInvitacion);
-router.post("/usuarios/invitaciones/aceptar/:token", preregistroRateLimit, usuarioController.aceptarInvitacion);
+router.get("/users/invitations", requireAuth, requireRole("ADMIN"), userController.listInvitations);
+router.post("/users/invitations", requireAuth, requireRole("ADMIN"), userController.invite);
+router.delete("/users/invitations/:id", requireAuth, requireRole("ADMIN"), userController.cancelInvitation);
+router.get("/users/invitations/validate/:token", userController.validateInvitation);
+router.post("/users/invitations/accept/:token", preRegistrationRateLimit, userController.acceptInvitation);
 
 // Usuarios (HU1 · P02) — solo Administrador gestiona cuentas.
-router.get("/usuarios", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.listar);
-router.post("/usuarios", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.crear);
-router.patch("/usuarios/:id/estado", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.cambiarEstado);
-router.patch("/usuarios/:id/rol", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.cambiarRol);
-router.patch("/usuarios/me/password", requireAuth, usuarioController.cambiarPassword);
-router.patch("/usuarios/:id/password", requireAuth, requireRole("ADMINISTRADOR"), usuarioController.restablecerPassword);
+router.get("/users", requireAuth, requireRole("ADMIN"), userController.list);
+router.post("/users", requireAuth, requireRole("ADMIN"), userController.create);
+router.patch("/users/:id/status", requireAuth, requireRole("ADMIN"), userController.changeStatus);
+router.patch("/users/:id/role", requireAuth, requireRole("ADMIN"), userController.changeRole);
+// Orden importante: la ruta literal /users/me/password va ANTES de /users/:id/password,
+// si no Express hace que :id matchee el string "me".
+router.patch("/users/me/password", requireAuth, userController.changePassword);
+router.patch("/users/:id/password", requireAuth, requireRole("ADMIN"), userController.resetPassword);
 
 // Auditoría — solo Administrador
-router.get("/auditoria", requireAuth, requireRole("ADMINISTRADOR"), auditoriaController.listar);
+router.get("/audit-logs", requireAuth, requireRole("ADMIN"), auditLogController.list);
 
 // Dashboard (P01)
-router.get("/dashboard/modulos", requireAuth, dashboardController.modulos);
+router.get("/dashboard/modules", requireAuth, dashboardController.modules);
 
 // Propietarios (HU2 · P03)
-router.get("/propietarios/buscar", requireAuth, propietarioController.buscar);
-router.get("/propietarios", requireAuth, propietarioController.listar);
-router.patch("/propietarios/:id", requireAuth, propietarioController.actualizar);
+router.get("/owners/search", requireAuth, ownerController.search);
+router.get("/owners", requireAuth, ownerController.list);
+router.patch("/owners/:id", requireAuth, ownerController.update);
 
 // Mascotas (HU2 · P04)
-router.get("/mascotas", requireAuth, mascotaController.listar);
-router.get("/mascotas/buscar", requireAuth, mascotaController.buscar);
-router.post("/mascotas", requireAuth, mascotaController.crear);
+router.get("/pets", requireAuth, petController.list);
+router.get("/pets/search", requireAuth, petController.search);
+router.post("/pets", requireAuth, petController.create);
 
 // Ficha individual de mascota — datos completos, edición y línea de tiempo unificada
-router.get("/mascotas/:id", requireAuth, mascotaController.detalle);
-router.patch("/mascotas/:id", requireAuth, mascotaController.actualizar);
-router.get("/mascotas/:id/historial", requireAuth, mascotaController.historial);
-router.patch("/mascotas/:id/estado", requireAuth, mascotaController.cambiarEstado);
+router.get("/pets/:id", requireAuth, petController.detail);
+router.patch("/pets/:id", requireAuth, petController.update);
+router.get("/pets/:id/history", requireAuth, petController.history);
+router.patch("/pets/:id/status", requireAuth, petController.changeStatus);
 
 // Atención Médica (HU3 · P05)
-router.get("/mascotas/:id/atenciones", requireAuth, atencionController.historial);
-router.post("/atenciones", requireAuth, atencionController.crear);
+router.get("/pets/:id/visits", requireAuth, medicalVisitController.history);
+router.post("/visits", requireAuth, medicalVisitController.create);
 
 // Veterinarios (soporte para selects de Nueva Cita / Nueva Atención)
-router.get("/veterinarios", requireAuth, veterinarioController.listar);
+router.get("/vets", requireAuth, vetController.list);
 
 // Horarios de atención por veterinario (HU1 · soporta la disponibilidad real de HU5)
-router.get("/veterinarios/:id/horarios", requireAuth, horarioController.listar);
-router.put("/veterinarios/:id/horarios", requireAuth, horarioController.actualizar);
+router.get("/vets/:id/schedules", requireAuth, scheduleController.list);
+router.put("/vets/:id/schedules", requireAuth, scheduleController.update);
 
 // Citas (HU5 · P07)
-router.get("/citas", requireAuth, citaController.listar);
-router.get("/citas/disponibilidad", requireAuth, citaController.disponibilidad);
-router.post("/citas", requireAuth, citaController.crear);
-router.patch("/citas/:id/estado", requireAuth, citaController.cambiarEstado);
-router.put("/citas/:id", requireAuth, citaController.reprogramar);
+router.get("/appointments", requireAuth, appointmentController.list);
+router.get("/appointments/availability", requireAuth, appointmentController.availability);
+router.post("/appointments", requireAuth, appointmentController.create);
+router.patch("/appointments/:id/status", requireAuth, appointmentController.changeStatus);
+router.put("/appointments/:id", requireAuth, appointmentController.reschedule);
 
 // Pagos (HU4 · P06)
-router.get("/pagos/pendientes", requireAuth, pagoController.listarPendientes);
-router.get("/pagos/historial", requireAuth, pagoController.historial);
-router.post("/pagos", requireAuth, pagoController.registrar);
+router.get("/payments/pending", requireAuth, paymentController.listPending);
+router.get("/payments/history", requireAuth, paymentController.history);
+router.post("/payments", requireAuth, paymentController.register);
 
 // Cobro por QR bancario (sesión 6) — genera un QR real vía el banco elegido para
-// "QR Simple" (ver lib/pagoQr.ts, hoy sin conectar de verdad) y lo confirma cuando
+// "QR Simple" (ver lib/qrPayment.ts, hoy sin conectar de verdad) y lo confirma cuando
 // el banco notifica el pago. El webhook es público: lo llama el banco, no un
 // usuario logueado — se protege con un secreto compartido, no con JWT.
-router.post("/pagos/qr", requireAuth, pagoQrController.generar);
-router.get("/pagos/qr/:id", requireAuth, pagoQrController.consultar);
-router.post("/pagos/qr/webhook", pagoQrController.webhook);
+router.post("/payments/qr", requireAuth, qrPaymentController.generate);
+router.get("/payments/qr/:id", requireAuth, qrPaymentController.get);
+router.post("/payments/qr/webhook", qrPaymentController.webhook);
 
 // Control Preventivo (HU6 · P08)
-router.get("/mascotas/:id/controles-preventivos", requireAuth, controlPreventivoController.historial);
-router.get("/controles-preventivos/proximos-a-vencer", requireAuth, controlPreventivoController.proximosAVencer);
-router.post("/controles-preventivos", requireAuth, controlPreventivoController.crear);
+router.get("/pets/:id/preventive-controls", requireAuth, preventiveControlController.history);
+router.get("/preventive-controls/upcoming", requireAuth, preventiveControlController.upcoming);
+router.post("/preventive-controls", requireAuth, preventiveControlController.create);
 
 // Inventario de Medicamentos (HU9 · P11) — solo Administrador
-router.get("/medicamentos", requireAuth, requireRole("ADMINISTRADOR"), medicamentoController.listar);
-router.get("/medicamentos/bajo-stock", requireAuth, requireRole("ADMINISTRADOR"), medicamentoController.bajoStock);
-router.post("/medicamentos", requireAuth, requireRole("ADMINISTRADOR"), medicamentoController.crear);
-router.patch("/medicamentos/:id", requireAuth, requireRole("ADMINISTRADOR"), medicamentoController.actualizar);
-router.delete("/medicamentos/:id", requireAuth, requireRole("ADMINISTRADOR"), medicamentoController.eliminar);
-router.post("/medicamentos/:id/entradas", requireAuth, requireRole("ADMINISTRADOR"), medicamentoController.registrarEntrada);
+router.get("/medications", requireAuth, requireRole("ADMIN"), medicationController.list);
+router.get("/medications/low-stock", requireAuth, requireRole("ADMIN"), medicationController.lowStock);
+router.post("/medications", requireAuth, requireRole("ADMIN"), medicationController.create);
+router.patch("/medications/:id", requireAuth, requireRole("ADMIN"), medicationController.update);
+router.delete("/medications/:id", requireAuth, requireRole("ADMIN"), medicationController.remove);
+router.post("/medications/:id/stock-entries", requireAuth, requireRole("ADMIN"), medicationController.registerStockIn);
 
 // Reportes (HU7 · P09, HU8 · P10) — solo Administrador
-router.get("/reportes/ingresos", requireAuth, requireRole("ADMINISTRADOR"), reporteController.ingresos);
-router.get("/reportes", requireAuth, requireRole("ADMINISTRADOR"), reporteController.general);
-router.get("/reportes/export/excel", requireAuth, requireRole("ADMINISTRADOR"), reporteController.exportarExcel);
-router.get("/reportes/export/pdf", requireAuth, requireRole("ADMINISTRADOR"), reporteController.exportarPdf);
+router.get("/reports/revenue", requireAuth, requireRole("ADMIN"), reportController.revenue);
+router.get("/reports", requireAuth, requireRole("ADMIN"), reportController.general);
+router.get("/reports/export/excel", requireAuth, requireRole("ADMIN"), reportController.exportExcel);
+router.get("/reports/export/pdf", requireAuth, requireRole("ADMIN"), reportController.exportPdf);
 
 // Recordatorios WhatsApp — Fase 7, HU11 Track A (envío semi-manual vía enlace wa.me)
-router.get("/recordatorios/pendientes", requireAuth, recordatorioController.pendientes);
-router.get("/recordatorios/historial", requireAuth, recordatorioController.historial);
-router.post("/recordatorios/:id/marcar-enviado", requireAuth, recordatorioController.marcarEnviado);
+router.get("/reminders/pending", requireAuth, reminderController.pending);
+router.get("/reminders/history", requireAuth, reminderController.history);
+router.post("/reminders/:id/mark-sent", requireAuth, reminderController.markSent);
 
 // Exportación completa — Fase 7, HU15 — solo Administrador
-router.get("/exportacion/completa", requireAuth, requireRole("ADMINISTRADOR"), exportacionController.completa);
+router.get("/exports/full", requireAuth, requireRole("ADMIN"), exportController.full);
 
 // Importación desde Excel — Fase 7, HU13 — solo Administrador
-router.post("/importaciones/clientes", requireAuth, requireRole("ADMINISTRADOR"), uploadExcel, importacionController.clientes);
+router.post("/imports/clients", requireAuth, requireRole("ADMIN"), uploadExcel, importController.clients);

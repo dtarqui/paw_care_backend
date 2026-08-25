@@ -1,5 +1,13 @@
-// Copiado tal cual desde database/MODELO_DATOS.md (sección 6).
-// database/MODELO_DATOS.md es la fuente de referencia — si este archivo diverge, ese es el que manda.
+// Esquema de datos de PawCare.
+//
+// CONVENCIÓN DE NOMBRES (ver docs/GLOSARIO_EN_ES.md):
+//   - Todo identificador de código está en INGLÉS (modelos, campos, enums y sus valores).
+//   - Todo texto visible para el usuario está en ESPAÑOL, y vive en la capa de UI
+//     (frontend) o en los mensajes de error de los servicios — nunca en nombres de campo.
+//   - Toda tabla física lleva el prefijo `st_` y va en snake_case plural, vía @@map.
+//     Los nombres de columna quedan en camelCase (igual que el campo del modelo).
+//
+// database/MODELO_DATOS.md documenta el porqué de cada decisión de modelado.
 
 generator client {
   provider      = "prisma-client-js"
@@ -12,375 +20,394 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-enum Rol {
-  ADMINISTRADOR
-  VETERINARIO
-  RECEPCIONISTA
+enum Role {
+  ADMIN
+  VET
+  RECEPTIONIST
 }
 
-enum EstadoRegistro {
-  ACTIVO
-  INACTIVO
+enum RecordStatus {
+  ACTIVE
+  INACTIVE
 }
 
-enum EstadoCita {
-  CONFIRMADA
-  ATENDIDA
-  CANCELADA
+enum AppointmentStatus {
+  CONFIRMED
+  ATTENDED
+  CANCELLED
 }
 
-enum EstadoPagoAtencion {
-  PENDIENTE
-  PAGADO
+enum VisitPaymentStatus {
+  PENDING
+  PAID
 }
 
-enum TipoControlPreventivo {
-  VACUNA
-  DESPARASITACION
+enum PreventiveControlType {
+  VACCINE
+  DEWORMING
 }
 
-enum TipoMovimientoInventario {
-  ENTRADA
-  SALIDA
+enum InventoryMoveType {
+  IN
+  OUT
 }
 
-enum MetodoPago {
-  EFECTIVO
-  TARJETA
-  TRANSFERENCIA
+enum PaymentMethod {
+  CASH
+  CARD
+  TRANSFER
   QR
 }
 
-enum EstadoCobroQr {
-  PENDIENTE
-  CONFIRMADO
-  EXPIRADO
+enum QrChargeStatus {
+  PENDING
+  CONFIRMED
+  EXPIRED
   ERROR
 }
 
-enum CanalNotificacion {
+enum NotificationChannel {
   EMAIL
   WHATSAPP_MANUAL
   WHATSAPP_API
 }
 
-enum EstadoNotificacion {
-  PENDIENTE
-  ENVIADO
-  FALLIDO
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
 }
 
-model Usuario {
-  id              Int             @id @default(autoincrement())
-  nombre          String          @db.VarChar(80)
-  apellidoPaterno String          @db.VarChar(80)
-  apellidoMaterno String?         @db.VarChar(80)
-  ci              String          @unique @db.VarChar(20)
-  username        String          @unique @db.VarChar(50)
-  passwordHash    String
-  email           String?         @unique @db.VarChar(120)
-  telefono        String?         @db.VarChar(20)
-  direccion       String?
-  rol             Rol
-  estado          EstadoRegistro  @default(ACTIVO)
-  autorregistrado Boolean         @default(false)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+model User {
+  id               Int          @id @default(autoincrement())
+  firstName        String       @db.VarChar(80)
+  paternalLastName String       @db.VarChar(80)
+  maternalLastName String?      @db.VarChar(80)
+  nationalId       String       @unique @db.VarChar(20)
+  username         String       @unique @db.VarChar(50)
+  passwordHash     String
+  email            String?      @unique @db.VarChar(120)
+  phone            String?      @db.VarChar(20)
+  address          String?
+  role             Role
+  status           RecordStatus @default(ACTIVE)
+  selfRegistered   Boolean      @default(false)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
-  veterinario         Veterinario?
-  cambiosMascota      CambioMascota[]
-  tokensRecuperacion  PasswordResetToken[]
-  invitacionesEnviadas InvitacionVeterinario[]
-  accionesAuditoria   RegistroAuditoria[]
+  vet                 Vet?
+  petChanges          PetChange[]
+  passwordResetTokens PasswordResetToken[]
+  sentInvitations     VetInvitation[]
+  auditLogs           AuditLog[]
 
-  @@index([rol])
+  @@index([role])
+  @@map("st_users")
 }
 
-model Veterinario {
-  id            Int             @id @default(autoincrement())
-  usuarioId     Int             @unique
-  usuario       Usuario         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  matricula     String          @unique @db.VarChar(20)
-  especialidad  String          @db.VarChar(80)
-  estado        EstadoRegistro  @default(ACTIVO)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+model Vet {
+  id            Int          @id @default(autoincrement())
+  userId        Int          @unique
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  licenseNumber String       @unique @db.VarChar(20)
+  specialty     String       @db.VarChar(80)
+  status        RecordStatus @default(ACTIVE)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
-  horarios      Horario[]
-  citas         Cita[]
-  atenciones    AtencionMedica[]
+  schedules    Schedule[]
+  appointments Appointment[]
+  visits       MedicalVisit[]
 
-  @@index([estado])
+  @@index([status])
+  @@map("st_vets")
 }
 
-model Horario {
-  id            Int         @id @default(autoincrement())
-  veterinarioId Int
-  veterinario   Veterinario @relation(fields: [veterinarioId], references: [id], onDelete: Cascade)
-  diaSemana     Int
-  horaInicio    DateTime    @db.Time
-  horaFin       DateTime    @db.Time
+model Schedule {
+  id        Int      @id @default(autoincrement())
+  vetId     Int
+  vet       Vet      @relation(fields: [vetId], references: [id], onDelete: Cascade)
+  dayOfWeek Int
+  startTime DateTime @db.Time
+  endTime   DateTime @db.Time
 
-  @@unique([veterinarioId, diaSemana, horaInicio])
-  @@index([veterinarioId])
+  @@unique([vetId, dayOfWeek, startTime])
+  @@index([vetId])
+  @@map("st_schedules")
 }
 
-model Propietario {
-  id              Int       @id @default(autoincrement())
-  nombre          String    @db.VarChar(80)
-  apellidoPaterno String    @db.VarChar(80)
-  apellidoMaterno String?   @db.VarChar(80)
-  ci              String    @unique @db.VarChar(20)
-  telefono        String?   @db.VarChar(20)
-  direccion       String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+model Owner {
+  id               Int      @id @default(autoincrement())
+  firstName        String   @db.VarChar(80)
+  paternalLastName String   @db.VarChar(80)
+  maternalLastName String?  @db.VarChar(80)
+  nationalId       String   @unique @db.VarChar(20)
+  phone            String?  @db.VarChar(20)
+  address          String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  mascotas        Mascota[]
-  notificaciones  Notificacion[]
+  pets          Pet[]
+  notifications Notification[]
 
-  @@index([apellidoPaterno, nombre])
+  @@index([paternalLastName, firstName])
+  @@map("st_owners")
 }
 
-model Mascota {
-  id              Int         @id @default(autoincrement())
-  propietarioId   Int
-  propietario     Propietario @relation(fields: [propietarioId], references: [id], onDelete: Restrict)
-  nombre          String      @db.VarChar(60)
-  especie         String      @db.VarChar(40)
-  raza            String?     @db.VarChar(60)
-  color           String?     @db.VarChar(40)
-  sexo            String?     @db.VarChar(10)
-  fechaNacimiento DateTime?   @db.Date
-  peso            Decimal?    @db.Decimal(5, 2)
-  estado          EstadoRegistro @default(ACTIVO)
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+model Pet {
+  id        Int          @id @default(autoincrement())
+  ownerId   Int
+  owner     Owner        @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  name      String       @db.VarChar(60)
+  species   String       @db.VarChar(40)
+  breed     String?      @db.VarChar(60)
+  color     String?      @db.VarChar(40)
+  sex       String?      @db.VarChar(10)
+  birthDate DateTime?    @db.Date
+  weight    Decimal?     @db.Decimal(5, 2)
+  status    RecordStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
-  citas           Cita[]
-  atenciones      AtencionMedica[]
-  controles       ControlPreventivo[]
-  cambios         CambioMascota[]
+  appointments       Appointment[]
+  visits             MedicalVisit[]
+  preventiveControls PreventiveControl[]
+  changes            PetChange[]
 
-  @@unique([propietarioId, nombre, especie])
-  @@index([propietarioId])
-  @@index([estado])
+  @@unique([ownerId, name, species])
+  @@index([ownerId])
+  @@index([status])
+  @@map("st_pets")
 }
 
-model Cita {
-  id            Int         @id @default(autoincrement())
-  codigo        String      @unique @db.VarChar(20)
-  fechaHora     DateTime
-  duracionMin   Int         @default(30)
-  mascotaId     Int
-  mascota       Mascota     @relation(fields: [mascotaId], references: [id], onDelete: Restrict)
-  veterinarioId Int
-  veterinario   Veterinario @relation(fields: [veterinarioId], references: [id], onDelete: Restrict)
-  tipoConsulta  String      @db.VarChar(60)
-  motivo        String?
-  estado        EstadoCita  @default(CONFIRMADA)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+model Appointment {
+  id               Int               @id @default(autoincrement())
+  code             String            @unique @db.VarChar(20)
+  dateTime         DateTime
+  durationMin      Int               @default(30)
+  petId            Int
+  pet              Pet               @relation(fields: [petId], references: [id], onDelete: Restrict)
+  vetId            Int
+  vet              Vet               @relation(fields: [vetId], references: [id], onDelete: Restrict)
+  consultationType String            @db.VarChar(60)
+  reason           String?
+  status           AppointmentStatus @default(CONFIRMED)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
-  notificaciones Notificacion[]
+  notifications Notification[]
 
-  @@index([veterinarioId, fechaHora])
-  @@index([mascotaId, fechaHora])
-  @@index([estado, fechaHora])
+  @@index([vetId, dateTime])
+  @@index([petId, dateTime])
+  @@index([status, dateTime])
+  @@map("st_appointments")
 }
 
-model AtencionMedica {
-  id               Int                @id @default(autoincrement())
-  mascotaId        Int
-  mascota          Mascota            @relation(fields: [mascotaId], references: [id], onDelete: Restrict)
-  veterinarioId    Int
-  veterinario      Veterinario        @relation(fields: [veterinarioId], references: [id], onDelete: Restrict)
-  fecha            DateTime           @default(now())
-  diagnostico      String
-  tratamiento      String
-  examenesExternos String?
-  tipoServicio     String
-  peso             Decimal?           @db.Decimal(5, 2)
-  montoConsulta    Decimal            @db.Decimal(10, 2)
-  estadoPago       EstadoPagoAtencion @default(PENDIENTE)
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+model MedicalVisit {
+  id              Int                @id @default(autoincrement())
+  petId           Int
+  pet             Pet                @relation(fields: [petId], references: [id], onDelete: Restrict)
+  vetId           Int
+  vet             Vet                @relation(fields: [vetId], references: [id], onDelete: Restrict)
+  date            DateTime           @default(now())
+  diagnosis       String
+  treatment       String
+  externalExams   String?
+  serviceType     String
+  weight          Decimal?           @db.Decimal(5, 2)
+  consultationFee Decimal            @db.Decimal(10, 2)
+  paymentStatus   VisitPaymentStatus @default(PENDING)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
-  pago             Pago?
-  movimientos      MovimientoInventario[]
-  cobrosQr         CobroQr[]
+  payment        Payment?
+  inventoryMoves InventoryMove[]
+  qrCharges      QrCharge[]
 
-  @@index([mascotaId, fecha])
-  @@index([estadoPago])
-  @@index([tipoServicio, fecha])
+  @@index([petId, date])
+  @@index([paymentStatus])
+  @@index([serviceType, date])
+  @@map("st_medical_visits")
 }
 
-model Pago {
-  id         Int            @id @default(autoincrement())
-  atencionId Int            @unique
-  atencion   AtencionMedica @relation(fields: [atencionId], references: [id], onDelete: Restrict)
-  metodoPago MetodoPago
-  monto      Decimal        @db.Decimal(10, 2)
-  fecha      DateTime       @default(now())
-  createdAt  DateTime       @default(now())
+model Payment {
+  id      Int           @id @default(autoincrement())
+  visitId Int           @unique
+  visit   MedicalVisit  @relation(fields: [visitId], references: [id], onDelete: Restrict)
+  method  PaymentMethod
+  amount  Decimal       @db.Decimal(10, 2)
+  date    DateTime      @default(now())
 
-  @@index([fecha])
-  @@index([metodoPago])
+  createdAt DateTime @default(now())
+
+  @@index([date])
+  @@index([method])
+  @@map("st_payments")
 }
 
 // Intento de cobro por QR bancario (riel "QR Simple" interoperable, vía la API propia
-// del banco comercial elegido — no una API única nacional). Una AtencionMedica puede
+// del banco comercial elegido — no una API única nacional). Una MedicalVisit puede
 // tener varios intentos (uno expira o falla, se genera otro) pero solo uno debería
-// llegar a CONFIRMADO; al confirmarse por webhook se crea el Pago real (mismo efecto
-// que registrar un pago manual con metodoPago QR), no lo reemplaza.
-model CobroQr {
-  id                Int           @id @default(autoincrement())
-  atencionId        Int
-  atencion          AtencionMedica @relation(fields: [atencionId], references: [id], onDelete: Restrict)
-  monto             Decimal       @db.Decimal(10, 2)
-  estado            EstadoCobroQr @default(PENDIENTE)
-  proveedor         String        @db.VarChar(40)
-  referenciaExterna String?       @unique @db.VarChar(100)
+// llegar a CONFIRMED; al confirmarse por webhook se crea el Payment real (mismo efecto
+// que registrar un pago manual con method QR), no lo reemplaza.
+model QrCharge {
+  id                Int            @id @default(autoincrement())
+  visitId           Int
+  visit             MedicalVisit   @relation(fields: [visitId], references: [id], onDelete: Restrict)
+  amount            Decimal        @db.Decimal(10, 2)
+  status            QrChargeStatus @default(PENDING)
+  provider          String         @db.VarChar(40)
+  externalReference String?        @unique @db.VarChar(100)
   qrPayload         String?
-  expiraEn          DateTime?
-  confirmadoEn      DateTime?
-  createdAt         DateTime      @default(now())
+  expiresAt         DateTime?
+  confirmedAt       DateTime?
+  createdAt         DateTime       @default(now())
 
-  @@index([atencionId])
-  @@index([estado])
+  @@index([visitId])
+  @@index([status])
+  @@map("st_qr_charges")
 }
 
-model ControlPreventivo {
-  id              Int                   @id @default(autoincrement())
-  mascotaId       Int
-  mascota         Mascota               @relation(fields: [mascotaId], references: [id], onDelete: Cascade)
-  tipo            TipoControlPreventivo
-  fechaAplicacion DateTime              @db.Date
-  proximaDosis    DateTime?             @db.Date
-  createdAt       DateTime              @default(now())
+model PreventiveControl {
+  id         Int                   @id @default(autoincrement())
+  petId      Int
+  pet        Pet                   @relation(fields: [petId], references: [id], onDelete: Cascade)
+  type       PreventiveControlType
+  appliedOn  DateTime              @db.Date
+  nextDoseOn DateTime?             @db.Date
+  createdAt  DateTime              @default(now())
 
-  notificaciones  Notificacion[]
+  notifications Notification[]
 
-  @@index([mascotaId])
-  @@index([proximaDosis])
+  @@index([petId])
+  @@index([nextDoseOn])
+  @@map("st_preventive_controls")
 }
 
-model Medicamento {
-  id          Int      @id @default(autoincrement())
-  nombre      String   @unique @db.VarChar(100)
-  stockActual Int      @default(0)
-  stockMinimo Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model Medication {
+  id           Int      @id @default(autoincrement())
+  name         String   @unique @db.VarChar(100)
+  currentStock Int      @default(0)
+  minimumStock Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  movimientos MovimientoInventario[]
+  moves InventoryMove[]
+
+  @@map("st_medications")
 }
 
-model MovimientoInventario {
-  id            Int                      @id @default(autoincrement())
-  medicamentoId Int
-  medicamento   Medicamento              @relation(fields: [medicamentoId], references: [id], onDelete: Restrict)
-  tipo          TipoMovimientoInventario
-  cantidad      Int
-  fecha         DateTime                 @default(now())
-  atencionId    Int?
-  atencion      AtencionMedica?          @relation(fields: [atencionId], references: [id], onDelete: SetNull)
+model InventoryMove {
+  id           Int               @id @default(autoincrement())
+  medicationId Int
+  medication   Medication        @relation(fields: [medicationId], references: [id], onDelete: Restrict)
+  type         InventoryMoveType
+  quantity     Int
+  date         DateTime          @default(now())
+  visitId      Int?
+  visit        MedicalVisit?     @relation(fields: [visitId], references: [id], onDelete: SetNull)
 
-  @@index([medicamentoId, fecha])
-  @@index([atencionId])
+  @@index([medicationId, date])
+  @@index([visitId])
+  @@map("st_inventory_moves")
 }
 
-model Notificacion {
-  id                  Int                @id @default(autoincrement())
-  propietarioId       Int
-  propietario         Propietario        @relation(fields: [propietarioId], references: [id], onDelete: Cascade)
-  citaId              Int?
-  cita                Cita?              @relation(fields: [citaId], references: [id], onDelete: SetNull)
-  controlPreventivoId Int?
-  controlPreventivo   ControlPreventivo? @relation(fields: [controlPreventivoId], references: [id], onDelete: SetNull)
-  canal               CanalNotificacion
-  mensaje             String
-  estado              EstadoNotificacion @default(PENDIENTE)
-  enviadoEn           DateTime?
-  createdAt           DateTime           @default(now())
+model Notification {
+  id                  Int                 @id @default(autoincrement())
+  ownerId             Int
+  owner               Owner               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  appointmentId       Int?
+  appointment         Appointment?        @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  preventiveControlId Int?
+  preventiveControl   PreventiveControl?  @relation(fields: [preventiveControlId], references: [id], onDelete: SetNull)
+  channel             NotificationChannel
+  message             String
+  status              NotificationStatus  @default(PENDING)
+  sentAt              DateTime?
+  createdAt           DateTime            @default(now())
 
-  @@index([estado])
-  @@index([canal, estado])
+  @@index([status])
+  @@index([channel, status])
+  @@map("st_notifications")
 }
 
-// Bitácora de ediciones manuales a los datos de una Mascota (pantalla de ficha
-// individual). Un cambio de peso registrado en una AtencionMedica NO genera fila
+// Bitácora de ediciones manuales a los datos de un Pet (pantalla de ficha
+// individual). Un cambio de peso registrado en una MedicalVisit NO genera fila
 // acá — ya queda visible como parte de esa atención en el historial; esta tabla
 // es solo para ediciones directas del registro (ej. corregir raza o sexo).
-model CambioMascota {
-  id            Int      @id @default(autoincrement())
-  mascotaId     Int
-  mascota       Mascota  @relation(fields: [mascotaId], references: [id], onDelete: Cascade)
-  campo         String
-  valorAnterior String?
-  valorNuevo    String?
-  fecha         DateTime @default(now())
-  usuarioId     Int?
-  usuario       Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+model PetChange {
+  id       Int      @id @default(autoincrement())
+  petId    Int
+  pet      Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+  field    String
+  oldValue String?
+  newValue String?
+  date     DateTime @default(now())
+  userId   Int?
+  user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  @@index([mascotaId, fecha])
+  @@index([petId, date])
+  @@map("st_pet_changes")
 }
 
 // Token de un solo uso para "olvidé mi contraseña" (POST /api/auth/forgot-password).
-// Vive fuera de Usuario porque puede haber varias solicitudes sin usar/expiradas
-// a la vez y se necesita el historial (usadoEn) para no reusar un token ya gastado.
+// Vive fuera de User porque puede haber varias solicitudes sin usar/expiradas
+// a la vez y se necesita el historial (usedAt) para no reusar un token ya gastado.
 model PasswordResetToken {
   id        Int       @id @default(autoincrement())
-  usuarioId Int
-  usuario   Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   token     String    @unique
-  expiraEn  DateTime
-  usadoEn   DateTime?
+  expiresAt DateTime
+  usedAt    DateTime?
   createdAt DateTime  @default(now())
 
-  @@index([usuarioId])
+  @@index([userId])
+  @@map("st_password_reset_tokens")
 }
 
 // Invitación de un Administrador a un Veterinario nuevo por email — alternativa al
-// preregistro público (POST /api/usuarios/preregistro): la cuenta creada al aceptar
-// queda ACTIVO de una (el Admin ya decidió invitar a esa persona), no pendiente de
+// preregistro público (POST /api/users/preregister): la cuenta creada al aceptar
+// queda ACTIVE de una (el Admin ya decidió invitar a esa persona), no pendiente de
 // aprobación. Convive con el preregistro abierto, no lo reemplaza.
-model InvitacionVeterinario {
-  id            Int       @id @default(autoincrement())
-  email         String    @db.VarChar(120)
-  nombre        String?   @db.VarChar(80)
-  token         String    @unique
-  invitadoPorId Int
-  invitadoPor   Usuario   @relation(fields: [invitadoPorId], references: [id], onDelete: Cascade)
-  expiraEn      DateTime
-  aceptadaEn    DateTime?
-  createdAt     DateTime  @default(now())
+model VetInvitation {
+  id          Int       @id @default(autoincrement())
+  email       String    @db.VarChar(120)
+  name        String?   @db.VarChar(80)
+  token       String    @unique
+  invitedById Int
+  invitedBy   User      @relation(fields: [invitedById], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
 
-  @@index([invitadoPorId])
+  @@index([invitedById])
   @@index([email])
+  @@map("st_vet_invitations")
 }
 
-enum AccionAuditoria {
-  ACTIVAR_CUENTA
-  DESACTIVAR_CUENTA
-  RESTABLECER_PASSWORD
-  CAMBIAR_ROL
-  INVITAR_VETERINARIO
+enum AuditAction {
+  ACTIVATE_ACCOUNT
+  DEACTIVATE_ACCOUNT
+  RESET_PASSWORD
+  CHANGE_ROLE
+  INVITE_VET
 }
 
 // Bitácora de acciones administrativas sensibles sobre OTRAS cuentas — quién hizo
 // qué, sobre quién, cuándo. No registra acciones sobre el propio actor (ej. cambiar
 // tu propia contraseña no genera fila acá, eso no necesita auditoría).
-model RegistroAuditoria {
-  id          Int              @id @default(autoincrement())
-  actorId     Int?
-  actor       Usuario?         @relation(fields: [actorId], references: [id], onDelete: SetNull)
-  accion      AccionAuditoria
-  entidadTipo String           @db.VarChar(40)
-  entidadId   Int?
-  detalle     String?
-  fecha       DateTime         @default(now())
+model AuditLog {
+  id         Int         @id @default(autoincrement())
+  actorId    Int?
+  actor      User?       @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action     AuditAction
+  entityType String      @db.VarChar(40)
+  entityId   Int?
+  details    String?
+  date       DateTime    @default(now())
 
-  @@index([fecha])
+  @@index([date])
   @@index([actorId])
+  @@map("st_audit_logs")
 }

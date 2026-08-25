@@ -1,9 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 import { authService } from "../services/auth.service";
-import { Rol } from "../types";
+import { Role } from "../types";
 
 export interface AuthRequest extends Request {
-  usuario?: { id: number; rol: Rol; nombre: string };
+  user?: { id: number; role: Role; name: string };
 }
 
 export function requireAuth(req: AuthRequest, res: Response, next: NextFunction) {
@@ -12,17 +12,17 @@ export function requireAuth(req: AuthRequest, res: Response, next: NextFunction)
     return res.status(401).json({ error: "No autenticado" });
   }
   try {
-    const payload = authService.verificarToken(header.slice("Bearer ".length));
-    req.usuario = { id: payload.sub, rol: payload.rol as Rol, nombre: payload.nombre };
+    const payload = authService.verifyToken(header.slice("Bearer ".length));
+    req.user = { id: payload.sub, role: payload.role as Role, name: payload.name };
     next();
   } catch {
     return res.status(401).json({ error: "Sesión inválida o expirada" });
   }
 }
 
-export function requireRole(...rolesPermitidos: Rol[]) {
+export function requireRole(...allowedRoles: Role[]) {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (!req.usuario || !rolesPermitidos.includes(req.usuario.rol)) {
+    if (!req.user || !allowedRoles.includes(req.user.role)) {
       return res.status(403).json({ error: "No tienes permiso para acceder a este recurso" });
     }
     next();

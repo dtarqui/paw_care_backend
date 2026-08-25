@@ -18,19 +18,19 @@ export function createApp() {
     .split(",")
     .map((url) => url.trim())
     .filter(Boolean);
-  const origenesPermitidos = ["http://localhost:5173", ...frontendUrls];
-  app.use(cors({ origin: frontendUrls.length > 0 ? origenesPermitidos : true }));
+  const allowedOrigins = ["http://localhost:5173", ...frontendUrls];
+  app.use(cors({ origin: frontendUrls.length > 0 ? allowedOrigins : true }));
 
   app.use(express.json());
   app.use("/api", delayMiddleware, router);
 
   app.get("/health", async (_req, res) => {
-    const inicio = Date.now();
-    let db: { status: "ok" | "error"; latenciaMs?: number; error?: string };
+    const start = Date.now();
+    let db: { status: "ok" | "error"; latencyMs?: number; error?: string };
 
     try {
       await prisma.$queryRaw`SELECT 1`;
-      db = { status: "ok", latenciaMs: Date.now() - inicio };
+      db = { status: "ok", latencyMs: Date.now() - start };
     } catch (error) {
       db = { status: "error", error: error instanceof Error ? error.message : "error desconocido" };
     }
@@ -38,7 +38,7 @@ export function createApp() {
     const status = db.status === "ok" ? 200 : 503;
     res.status(status).json({
       status: db.status === "ok" ? "ok" : "degraded",
-      uptimeSegundos: Math.round(process.uptime()),
+      uptimeSeconds: Math.round(process.uptime()),
       timestamp: new Date().toISOString(),
       db,
     });

@@ -8,7 +8,7 @@ const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
 
 // Sin las SMTP_* configuradas, el transporter queda null a propósito — mismo criterio
 // que el resto del proyecto (ver HU11 Track B en TASKS.md): nunca fingir un envío que
-// no ocurrió. enviarEmail() falla con un error claro en vez de tragarse el error.
+// no ocurrió. sendEmail() falla con un error claro en vez de tragarse el error.
 const transporter =
   SMTP_HOST && SMTP_USER && SMTP_PASS
     ? nodemailer.createTransport({
@@ -19,10 +19,12 @@ const transporter =
       })
     : null;
 
-export class EmailNoConfiguradoError extends Error {
+export class EmailNotConfiguredError extends Error {
   constructor() {
-    super("El envío de email no está configurado en este entorno (faltan las variables SMTP_* — ver backend/.env.example)");
-    this.name = "EmailNoConfiguradoError";
+    super(
+      "El envío de email no está configurado en este entorno (faltan las variables SMTP_* — ver backend/.env.example)"
+    );
+    this.name = "EmailNotConfiguredError";
   }
 }
 
@@ -32,9 +34,9 @@ export interface EmailInput {
   html: string;
 }
 
-export async function enviarEmail(input: EmailInput): Promise<void> {
+export async function sendEmail(input: EmailInput): Promise<void> {
   if (!transporter) {
-    throw new EmailNoConfiguradoError();
+    throw new EmailNotConfiguredError();
   }
   await transporter.sendMail({
     from: `"PawCare" <${SMTP_FROM}>`,

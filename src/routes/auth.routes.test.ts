@@ -12,19 +12,21 @@ jest.mock("../lib/prisma");
 const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>;
 const app = createApp();
 
-function usuarioFalso(overrides: Partial<Record<string, unknown>> = {}) {
+function fakeUser(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     id: 1,
     username: "admin",
     passwordHash: bcrypt.hashSync("admin123", 4),
-    nombre: "Ana",
-    apellidoPaterno: "García",
-    apellidoMaterno: null,
-    ci: "1234567",
-    telefono: null,
-    direccion: null,
-    rol: "ADMINISTRADOR",
-    estado: "ACTIVO",
+    firstName: "Ana",
+    paternalLastName: "García",
+    maternalLastName: null,
+    nationalId: "1234567",
+    email: null,
+    phone: null,
+    address: null,
+    role: "ADMIN",
+    status: "ACTIVE",
+    selfRegistered: false,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
@@ -34,7 +36,7 @@ function usuarioFalso(overrides: Partial<Record<string, unknown>> = {}) {
 
 describe("POST /api/auth/login (end-to-end contra la app real, Prisma mockeado)", () => {
   it("responde 200 con token para credenciales válidas", async () => {
-    prismaMock.usuario.findUnique.mockResolvedValue(usuarioFalso());
+    prismaMock.user.findUnique.mockResolvedValue(fakeUser());
 
     const res = await request(app).post("/api/auth/login").send({ username: "admin", password: "admin123" });
 
@@ -43,7 +45,7 @@ describe("POST /api/auth/login (end-to-end contra la app real, Prisma mockeado)"
   });
 
   it("responde 401 con credenciales inválidas", async () => {
-    prismaMock.usuario.findUnique.mockResolvedValue(usuarioFalso());
+    prismaMock.user.findUnique.mockResolvedValue(fakeUser());
 
     const res = await request(app).post("/api/auth/login").send({ username: "admin", password: "mala" });
 
@@ -52,15 +54,15 @@ describe("POST /api/auth/login (end-to-end contra la app real, Prisma mockeado)"
   });
 
   it("responde 401 en una ruta protegida sin token", async () => {
-    const res = await request(app).get("/api/mascotas");
+    const res = await request(app).get("/api/pets");
     expect(res.status).toBe(401);
   });
 
   it("responde 403 en una ruta de solo-Administrador con un rol distinto", async () => {
-    prismaMock.usuario.findUnique.mockResolvedValue(usuarioFalso({ rol: "RECEPCIONISTA" }));
+    prismaMock.user.findUnique.mockResolvedValue(fakeUser({ role: "RECEPTIONIST" }));
     const login = await request(app).post("/api/auth/login").send({ username: "admin", password: "admin123" });
 
-    const res = await request(app).get("/api/usuarios").set("Authorization", `Bearer ${login.body.token}`);
+    const res = await request(app).get("/api/users").set("Authorization", `Bearer ${login.body.token}`);
 
     expect(res.status).toBe(403);
   });

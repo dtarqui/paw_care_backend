@@ -10,6 +10,8 @@
 
 ## Progreso
 
+> **⚠️ Nombres antiguos en el historial:** todo lo que sigue (Progreso y sesiones 1–6) quedó escrito con los nombres en español que el proyecto usaba en ese momento (`Mascota`, `/api/mascotas`, `estado: ACTIVO`, …). En la **sesión 7** el código pasó íntegramente a inglés y las tablas al prefijo `st_` — se dejó el historial tal cual, como registro de lo que se hizo cuándo. Para traducir cualquier nombre viejo al actual, usá [`docs/GLOSARIO_EN_ES.md`](../docs/GLOSARIO_EN_ES.md).
+
 > **Nota de arquitectura (actualizada):** el backend ya corre sobre **Prisma + PostgreSQL (Supabase)**, no sobre datos en memoria. Misma arquitectura en capas (routes → controllers → services → repositories); `repositories/` es la única capa que importa `../lib/prisma`, tal como estaba planeado desde el modo demo — la migración solo tocó esa capa (y volvió `async` a cada service/controller que la usa). `src/data/*.ts` ya no existe. Semilla de datos demo: `npm run db:seed` (o `npm run db:reset` para recrear todo desde cero). Ver también la nota de contraseñas más abajo.
 
 - [x] Tarea 00 — Setup del backend — completo: estructura en capas, Prisma conectado a Supabase, migraciones aplicadas (`prisma/migrations/`)
@@ -112,6 +114,24 @@ Tras investigar pasarelas de pago en Bolivia (`docs/COMPARATIVA_MERCADO_VETERINA
 **Lo que falta para que esto cobre de verdad:** elegir el banco, conseguir sus credenciales/documentación técnica de API, y reemplazar el cuerpo de `generarCobroQrBancario()` — nada más en el sistema (rutas, servicio, frontend) necesita cambiar.
 
 **Trámite investigado para elegir banco (detalle completo en `docs/COMPARATIVA_MERCADO_VETERINARIO.md` sección 11.1):** ambos requieren una cuenta de persona jurídica (NIT + Testimonio de Constitución en FUNDEMPRESA). **BNB es el punto de partida priorizado** — tiene un programa "API Market" que lista explícitamente "Pagos y cobros con QR" y, sobre todo, un **sandbox público y gratuito** (`bnb.com.bo/PortalBNB/Api/Sandbox`) donde se puede empezar a probar la integración ya, sin esperar aprobación de nadie; luego se pide "acceso full" registrándose en su plataforma. BCP, en cambio, solo expone nombres de endpoints sin documentación técnica pública — el único camino ahí es llamar a su línea gratuita (800103060) y pedir acceso a la API de Pagos QR directamente. Ninguna de las dos rutas está verificada todavía contra el contrato técnico real (eso sigue gateado detrás del onboarding de cada banco) — actualizar esta nota y `docs/COMPARATIVA_MERCADO_VETERINARIO.md` en cuanto se entre al sandbox de BNB o se consiga la doc de BCP.
+
+---
+
+## Correcciones y mejoras (sesión 7 — código en inglés, UI en español, tablas con prefijo `st_`)
+
+Refactor transversal de nomenclatura, sin cambios funcionales: **todo identificador pasó a inglés y todo texto visible quedó en español**. El mapa término por término está en [`docs/GLOSARIO_EN_ES.md`](../docs/GLOSARIO_EN_ES.md); la convención resumida vive en `CLAUDE.md`.
+
+- [x] **Esquema Prisma reescrito** — 17 modelos y 12 enums en inglés (`Usuario`→`User`, `Mascota`→`Pet`, `AtencionMedica`→`MedicalVisit`, `CobroQr`→`QrCharge`, …), valores de enum incluidos (`ADMINISTRADOR`→`ADMIN`, `PENDIENTE`→`PENDING`, `VACUNA`→`VACCINE`, …). Cada modelo lleva `@@map("st_…")` en snake_case plural; las columnas quedan en camelCase, igual que el campo.
+- [x] **Base recreada en Supabase** — se dropearon las 17 tablas y 11 enums viejos **por nombre** y se aplicó una migración inicial única (`20260824000000_init_english_st_prefix`), que incluye el índice único parcial (ahora `appointment_vet_datetime_active_idx` sobre `st_appointments`). Las 8 migraciones anteriores se eliminaron del repo: referenciaban tablas y valores de enum que ya no existen, y un `migrate reset` habría sido destructivo (ver el punto siguiente).
+- [x] **⚠️ Hallazgo importante: el schema `public` está compartido con otro proyecto.** Conviven 9 tablas con prefijo `mt_` (talleres, repuestos, organizaciones) **con datos reales**. Por eso el borrado se hizo tabla por tabla en vez de `prisma migrate reset`, que habría destruido ese otro proyecto. Consecuencias registradas en `CLAUDE.md` y `database/MODELO_DATOS.md` sección 7: **no usar `migrate reset`, `migrate dev` ni `db push`** contra esta base; las migraciones nuevas se generan con `prisma migrate diff` y se aplican con `prisma migrate deploy`.
+- [x] **`npm run db:reset` dejó de ser un footgun** — antes era `prisma migrate reset --force` (habría borrado las tablas `mt_*`). Ahora corre `prisma/reset.ts`, que dropea **solo** las tablas `st_*` y los enums de PawCare, y luego indica correr `migrate deploy` + `db seed`. Probado de punta a punta: las 9 tablas `mt_*` sobreviven intactas.
+- [x] **`src/` completo migrado** — 15 repositorios, 20 servicios, 18 controladores, middlewares, utils y tipos, con sus archivos renombrados (`mascota.repository.ts`→`pet.repository.ts`, `lib/pagoQr.ts`→`lib/qrPayment.ts`, `services/agenda.errors.ts`→`services/schedule.errors.ts`, …). Las 30+ clases de error de dominio se renombraron a inglés **conservando sus mensajes en español**, porque la UI los muestra tal cual (`PetNotFoundError` sigue diciendo "La mascota solicitada no existe").
+- [x] **Contrato HTTP en inglés** — los 61 endpoints y todas las claves del JSON (`/api/mascotas`→`/api/pets`, `{nombre, especie}`→`{name, species}`), más los query params (`?ci=`→`?nationalId=`, `?activas=`→`?active=`, `?desde/hasta`→`?from/to`). Tabla completa de equivalencias en el glosario.
+- [x] **Seed y tests reescritos** — mismos datos demo y mismas credenciales (`admin`/`admin123`, etc.), mismos 24 tests en 5 suites. `pago.service.test.ts`→`payment.service.test.ts`, `cita.service.test.ts`→`appointment.service.test.ts`, `pagoQr.service.test.ts`→`qrPayment.service.test.ts`.
+- [x] **Links de email actualizados** — `auth.service.ts` y `vetInvitation.service.ts` ahora apuntan a `/reset-password` y `/invitation` (antes `/restablecer-password` y `/invitacion`), acompañando el renombrado de rutas del frontend.
+- [x] **Verificado de punta a punta** contra Supabase real: `npx tsc --noEmit` limpio, `npx jest` 24/24 en verde, y con el servidor corriendo — login, los 10 endpoints de lectura principales, creación de cita (201), conflicto de agenda (409 vía el índice parcial), cobro QR (500 con el mensaje honesto de siempre) y webhook sin secreto (401). También se validó el ciclo completo `db:reset` → `migrate deploy` → `db seed`.
+
+**Lo que NO cambió:** ninguna regla de negocio, ningún endpoint agregado o quitado, ningún texto que ve el usuario. Los mensajes de error, las etiquetas, los comentarios del código, los encabezados de los Excel exportados y el cuerpo de los emails siguen en español.
 
 ---
 

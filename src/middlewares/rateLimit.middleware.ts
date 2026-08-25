@@ -12,7 +12,7 @@ export const loginRateLimit = rateLimit({
 
 // El preregistro de veterinario también es público (sin JWT) — mismo motivo que el
 // login, pero más laxo: es normal corregir un campo y reenviar el formulario varias veces.
-export const preregistroRateLimit = rateLimit({
+export const preRegistrationRateLimit = rateLimit({
   windowMs: 60 * 60 * 1000,
   limit: 5,
   standardHeaders: true,

@@ -2,25 +2,27 @@ import bcrypt from "bcryptjs";
 import type { DeepMockProxy } from "jest-mock-extended";
 import type { PrismaClient } from "@prisma/client";
 import { prisma } from "../lib/prisma";
-import { authService, CredencialesInvalidasError } from "./auth.service";
+import { authService, InvalidCredentialsError } from "./auth.service";
 
 jest.mock("../lib/prisma");
 
 const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>;
 
-function usuarioFalso(overrides: Partial<Record<string, unknown>> = {}) {
+function fakeUser(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     id: 1,
     username: "admin",
     passwordHash: bcrypt.hashSync("admin123", 4),
-    nombre: "Ana",
-    apellidoPaterno: "García",
-    apellidoMaterno: null,
-    ci: "1234567",
-    telefono: null,
-    direccion: null,
-    rol: "ADMINISTRADOR",
-    estado: "ACTIVO",
+    firstName: "Ana",
+    paternalLastName: "García",
+    maternalLastName: null,
+    nationalId: "1234567",
+    email: null,
+    phone: null,
+    address: null,
+    role: "ADMIN",
+    status: "ACTIVE",
+    selfRegistered: false,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
@@ -30,30 +32,30 @@ function usuarioFalso(overrides: Partial<Record<string, unknown>> = {}) {
 
 describe("authService.login", () => {
   it("devuelve token y usuario público con credenciales válidas", async () => {
-    prismaMock.usuario.findUnique.mockResolvedValue(usuarioFalso());
+    prismaMock.user.findUnique.mockResolvedValue(fakeUser());
 
-    const resultado = await authService.login("admin", "admin123");
+    const result = await authService.login("admin", "admin123");
 
-    expect(resultado.token).toBeTruthy();
-    expect(resultado.usuario.username).toBe("admin");
-    expect(resultado.usuario).not.toHaveProperty("password");
+    expect(result.token).toBeTruthy();
+    expect(result.user.username).toBe("admin");
+    expect(result.user).not.toHaveProperty("passwordHash");
   });
 
   it("rechaza una contraseña incorrecta", async () => {
-    prismaMock.usuario.findUnique.mockResolvedValue(usuarioFalso());
+    prismaMock.user.findUnique.mockResolvedValue(fakeUser());
 
-    await expect(authService.login("admin", "incorrecta")).rejects.toThrow(CredencialesInvalidasError);
+    await expect(authService.login("admin", "incorrecta")).rejects.toThrow(InvalidCredentialsError);
   });
 
   it("rechaza un usuario inexistente", async () => {
-    prismaMock.usuario.findUnique.mockResolvedValue(null);
+    prismaMock.user.findUnique.mockResolvedValue(null);
 
-    await expect(authService.login("noexiste", "cualquiera")).rejects.toThrow(CredencialesInvalidasError);
+    await expect(authService.login("noexiste", "cualquiera")).rejects.toThrow(InvalidCredentialsError);
   });
 
-  it("rechaza un usuario INACTIVO aunque la contraseña sea correcta", async () => {
-    prismaMock.usuario.findUnique.mockResolvedValue(usuarioFalso({ estado: "INACTIVO" }));
+  it("rechaza un usuario INACTIVE aunque la contraseña sea correcta", async () => {
+    prismaMock.user.findUnique.mockResolvedValue(fakeUser({ status: "INACTIVE" }));
 
-    await expect(authService.login("admin", "admin123")).rejects.toThrow(CredencialesInvalidasError);
+    await expect(authService.login("admin", "admin123")).rejects.toThrow(InvalidCredentialsError);
   });
 });

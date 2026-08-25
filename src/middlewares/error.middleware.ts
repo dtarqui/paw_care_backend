@@ -1,93 +1,93 @@
 import { NextFunction, Request, Response } from "express";
-import { EmailNoConfiguradoError } from "../lib/mailer";
+import { EmailNotConfiguredError } from "../lib/mailer";
+import { QrPaymentProviderNotConfiguredError } from "../lib/qrPayment";
 import {
-  CredencialesInvalidasError,
-  DatosDeRecuperacionInvalidosError,
-  TokenDeRecuperacionInvalidoError,
+  AppointmentNotFoundError,
+  InvalidAppointmentDataError,
+  ScheduleConflictError,
+} from "../services/appointment.service";
+import {
+  InvalidCredentialsError,
+  InvalidResetDataError,
+  InvalidResetTokenError,
 } from "../services/auth.service";
+import { InvalidImportDataError } from "../services/import.service";
+import { InvalidVisitDataError } from "../services/medicalVisit.service";
 import {
-  AgendaAjenaError,
-  CitaNoEncontradaError,
-  ConflictoDeAgendaError,
-  DatosDeCitaInvalidosError,
-} from "../services/cita.service";
-import { InvitacionInvalidaError } from "../services/invitacion.service";
-import { PagoInvalidoError } from "../services/pago.service";
-import { AtencionYaPagadaError, CobroQrNoEncontradoError } from "../services/pagoQr.service";
-import { ProveedorPagoQrNoConfiguradoError } from "../lib/pagoQr";
+  DuplicateMedicationError,
+  InsufficientStockError,
+  InvalidMedicationDataError,
+  MedicationHasMovesError,
+  MedicationNotFoundError,
+} from "../services/medication.service";
+import { InvalidOwnerDataError, OwnerNotFoundError } from "../services/owner.service";
+import { InvalidPaymentError } from "../services/payment.service";
+import { DuplicatePetError, InvalidPetDataError, PetNotFoundError } from "../services/pet.service";
+import { InvalidPreventiveControlDataError } from "../services/preventiveControl.service";
+import { QrChargeNotFoundError, VisitAlreadyPaidError } from "../services/qrPayment.service";
+import { ReminderNotFoundError } from "../services/reminder.service";
+import { ForeignScheduleError } from "../services/schedule.errors";
+import { InvalidScheduleDataError } from "../services/schedule.service";
 import {
-  DatosDeUsuarioInvalidosError,
-  PasswordActualIncorrectaError,
-  UsuarioDuplicadoError,
-  UsuarioNoEncontradoError,
-} from "../services/usuario.service";
-import { DatosDeMascotaInvalidosError, MascotaDuplicadaError, MascotaNoEncontradaError } from "../services/mascota.service";
-import { DatosDeAtencionInvalidosError } from "../services/atencion.service";
-import { DatosDeControlInvalidosError } from "../services/controlPreventivo.service";
-import {
-  DatosDeMedicamentoInvalidosError,
-  MedicamentoConMovimientosError,
-  MedicamentoDuplicadoError,
-  MedicamentoNoEncontradoError,
-  StockInsuficienteError,
-} from "../services/medicamento.service";
-import { DatosDeImportacionInvalidosError } from "../services/importacion.service";
-import { RecordatorioNoEncontradoError } from "../services/recordatorio.service";
-import { DatosDePropietarioInvalidosError, PropietarioNoEncontradoError } from "../services/propietario.service";
-import { DatosDeHorarioInvalidosError } from "../services/horario.service";
+  DuplicateUserError,
+  InvalidUserDataError,
+  UserNotFoundError,
+  WrongCurrentPasswordError,
+} from "../services/user.service";
+import { InvalidInvitationError } from "../services/vetInvitation.service";
 
 // Middleware de errores centralizado: cada servicio lanza errores de dominio
 // (clases propias) y aquí es el único lugar que los traduce a códigos HTTP.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function errorMiddleware(err: unknown, _req: Request, res: Response, _next: NextFunction) {
-  if (err instanceof CredencialesInvalidasError || err instanceof PasswordActualIncorrectaError) {
+  if (err instanceof InvalidCredentialsError || err instanceof WrongCurrentPasswordError) {
     return res.status(401).json({ error: err.message });
   }
-  if (err instanceof PagoInvalidoError || err instanceof AtencionYaPagadaError) {
+  if (err instanceof InvalidPaymentError || err instanceof VisitAlreadyPaidError) {
     return res.status(400).json({ error: err.message });
   }
   if (
-    err instanceof CitaNoEncontradaError ||
-    err instanceof RecordatorioNoEncontradoError ||
-    err instanceof MascotaNoEncontradaError ||
-    err instanceof UsuarioNoEncontradoError ||
-    err instanceof PropietarioNoEncontradoError ||
-    err instanceof MedicamentoNoEncontradoError ||
-    err instanceof CobroQrNoEncontradoError
+    err instanceof AppointmentNotFoundError ||
+    err instanceof ReminderNotFoundError ||
+    err instanceof PetNotFoundError ||
+    err instanceof UserNotFoundError ||
+    err instanceof OwnerNotFoundError ||
+    err instanceof MedicationNotFoundError ||
+    err instanceof QrChargeNotFoundError
   ) {
     return res.status(404).json({ error: err.message });
   }
-  if (err instanceof ConflictoDeAgendaError || err instanceof MedicamentoConMovimientosError) {
+  if (err instanceof ScheduleConflictError || err instanceof MedicationHasMovesError) {
     return res.status(409).json({ error: err.message });
   }
   if (
-    err instanceof DatosDeCitaInvalidosError ||
-    err instanceof DatosDeUsuarioInvalidosError ||
-    err instanceof DatosDeMascotaInvalidosError ||
-    err instanceof DatosDeAtencionInvalidosError ||
-    err instanceof DatosDeControlInvalidosError ||
-    err instanceof DatosDeMedicamentoInvalidosError ||
-    err instanceof DatosDeImportacionInvalidosError ||
-    err instanceof DatosDePropietarioInvalidosError ||
-    err instanceof DatosDeHorarioInvalidosError ||
-    err instanceof DatosDeRecuperacionInvalidosError ||
-    err instanceof TokenDeRecuperacionInvalidoError ||
-    err instanceof InvitacionInvalidaError
+    err instanceof InvalidAppointmentDataError ||
+    err instanceof InvalidUserDataError ||
+    err instanceof InvalidPetDataError ||
+    err instanceof InvalidVisitDataError ||
+    err instanceof InvalidPreventiveControlDataError ||
+    err instanceof InvalidMedicationDataError ||
+    err instanceof InvalidImportDataError ||
+    err instanceof InvalidOwnerDataError ||
+    err instanceof InvalidScheduleDataError ||
+    err instanceof InvalidResetDataError ||
+    err instanceof InvalidResetTokenError ||
+    err instanceof InvalidInvitationError
   ) {
     return res.status(400).json({ error: err.message });
   }
-  if (err instanceof AgendaAjenaError) {
+  if (err instanceof ForeignScheduleError) {
     return res.status(403).json({ error: err.message });
   }
   if (
-    err instanceof UsuarioDuplicadoError ||
-    err instanceof MascotaDuplicadaError ||
-    err instanceof StockInsuficienteError ||
-    err instanceof MedicamentoDuplicadoError
+    err instanceof DuplicateUserError ||
+    err instanceof DuplicatePetError ||
+    err instanceof InsufficientStockError ||
+    err instanceof DuplicateMedicationError
   ) {
     return res.status(409).json({ error: err.message });
   }
-  if (err instanceof EmailNoConfiguradoError || err instanceof ProveedorPagoQrNoConfiguradoError) {
+  if (err instanceof EmailNotConfiguredError || err instanceof QrPaymentProviderNotConfiguredError) {
     console.error(err);
     return res.status(500).json({ error: err.message });
   }
