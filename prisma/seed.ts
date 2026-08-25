@@ -74,8 +74,10 @@ async function main() {
   const toby = await prisma.pet.create({ data: { ownerId: gabriela.id, name: "Toby", species: "Perro", breed: "Beagle", sex: "Macho", birthDate: literalDateOnlyToDate("2024-10-12"), weight: 11.3 } });
 
   // --- Usuarios + Veterinarios --------------------------------------------
-  // admin/recepcion mantienen username y contraseña (documentados en el README) —
-  // solo cambian los nombres de persona, junto con todo el resto del set demo.
+  // Hay exactamente una credencial demo por rol, y son las tres que la pantalla de
+  // login muestra: admin / veterinario / recepcion. Los otros 5 veterinarios existen
+  // porque el set de datos los necesita (citas, horarios, atenciones repartidas), y
+  // entran con su nombre.apellido — pero no se publicitan en el login.
   const adminUser = await prisma.user.create({
     data: { username: "admin", passwordHash: await hash("admin123"), firstName: "Verónica", paternalLastName: "Molina", nationalId: "1111001", role: "ADMIN", status: "ACTIVE" },
   });
@@ -83,7 +85,7 @@ async function main() {
     data: { username: "recepcion", passwordHash: await hash("recepcion123"), firstName: "Daniela", paternalLastName: "Cabrera", nationalId: "1111002", role: "RECEPTIONIST", status: "ACTIVE" },
   });
   const patriciaUser = await prisma.user.create({
-    data: { username: "patricia.mendoza", passwordHash: await hash("vet123"), firstName: "Patricia", paternalLastName: "Mendoza", nationalId: "2221001", role: "VET", status: "ACTIVE" },
+    data: { username: "veterinario", passwordHash: await hash("vet123"), firstName: "Patricia", paternalLastName: "Mendoza", nationalId: "2221001", role: "VET", status: "ACTIVE" },
   });
   const diegoUser = await prisma.user.create({
     data: { username: "diego.herrera", passwordHash: await hash("vet123"), firstName: "Diego", paternalLastName: "Herrera", nationalId: "2221002", role: "VET", status: "ACTIVE" },
@@ -211,15 +213,15 @@ async function main() {
     })),
   });
 
-  console.log("Listo. Usuarios demo:");
-  console.log("  admin / admin123               (ADMIN)");
-  console.log("  recepcion / recepcion123        (RECEPTIONIST)");
-  console.log("  patricia.mendoza / vet123       (VET — Medicina General)");
-  console.log("  diego.herrera / vet123          (VET — Dermatología)");
-  console.log("  valeria.suarez / vet123         (VET — Cirugía)");
-  console.log("  andres.paredes / vet123         (VET — Odontología)");
-  console.log("  camila.rocha / vet123           (VET — Oftalmología)");
-  console.log("  sebastian.guzman / vet123       (VET — Medicina General)");
+  // Una credencial demo por rol — son las tres que muestra la pantalla de login.
+  console.log("Listo. Credenciales demo (una por rol):");
+  console.log("  admin / admin123           (ADMIN        — Verónica Molina)");
+  console.log("  veterinario / vet123       (VET          — Patricia Mendoza)");
+  console.log("  recepcion / recepcion123   (RECEPTIONIST — Daniela Cabrera)");
+  console.log("");
+  console.log("Los otros 5 veterinarios existen como datos (citas, horarios, atenciones)");
+  console.log("y también entran con vet123: diego.herrera, valeria.suarez, andres.paredes,");
+  console.log("camila.rocha, sebastian.guzman.");
 }
 
 main()

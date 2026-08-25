@@ -16,18 +16,20 @@ npm run dev                 # http://localhost:4000
 
 `npm run db:reset` dropea **solo** las tablas `st_*` y los enums de PawCare (`prisma/reset.ts`) y luego indica correr `npx prisma migrate deploy && npx prisma db seed`. No usa `prisma migrate reset`: el schema `public` está compartido con otro proyecto (tablas `mt_*`, con datos reales) y un reset completo las destruiría. Por el mismo motivo, para una migración nueva usá `prisma migrate diff` + `prisma migrate deploy`, nunca `prisma migrate dev`.
 
-**Usuarios de demo** (creados por `prisma/seed.ts` — se regeneran, con nombres nuevos, cada vez que se corre `npm run db:seed`; esta tabla refleja la siembra actual):
+**Usuarios de demo** (creados por `prisma/seed.ts`). Los tres usernames de abajo son **estables**: no cambian al resembrar, justamente para poder mostrarlos en la pantalla de login.
 
-| Usuario | Contraseña | Rol |
-|---|---|---|
-| admin | admin123 | ADMIN |
-| recepcion | recepcion123 | RECEPTIONIST |
-| patricia.mendoza | vet123 | VET (Medicina General) |
-| diego.herrera | vet123 | VET (Dermatología) |
-| valeria.suarez | vet123 | VET (Cirugía) |
-| andres.paredes | vet123 | VET (Odontología) |
-| camila.rocha | vet123 | VET (Oftalmología) |
-| sebastian.guzman | vet123 | VET (Medicina General) |
+**Una credencial por rol** — son las tres que muestra la pantalla de login:
+
+| Usuario | Contraseña | Rol | Persona |
+|---|---|---|---|
+| `admin` | `admin123` | ADMIN | Verónica Molina |
+| `veterinario` | `vet123` | VET | Patricia Mendoza (Medicina General) |
+| `recepcion` | `recepcion123` | RECEPTIONIST | Daniela Cabrera |
+
+Los otros 5 veterinarios existen porque el set de datos los necesita (citas, horarios y
+atenciones repartidas entre varios profesionales) y entran con `vet123`, pero no se
+publicitan en el login: `diego.herrera`, `valeria.suarez`, `andres.paredes`,
+`camila.rocha`, `sebastian.guzman`.
 
 `GET /health` reporta el estado del servidor y de la conexión a la base de datos (`db.status`, `db.latencyMs`).
 
