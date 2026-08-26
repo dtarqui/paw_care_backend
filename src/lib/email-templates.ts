@@ -14,7 +14,7 @@ function wrapper(content: string): string {
 export function passwordResetTemplate(name: string, link: string): string {
   return wrapper(`
     <p>Hola ${name},</p>
-    <p>Recibimos una solicitud para restablecer tu contraseña. Si fuiste tú, hacé clic en el botón de abajo — el enlace vence en 1 hora.</p>
+    <p>Recibimos una solicitud para restablecer tu contraseña. Si fuiste tú, haz clic en el botón de abajo — el enlace vence en 1 hora.</p>
     <a href="${link}" style="${BUTTON_STYLE}">Restablecer contraseña</a>
     <p style="${FOOTER_STYLE}">Si no pediste este cambio, ignora este correo — tu contraseña actual sigue funcionando sin cambios.</p>
   `);
@@ -23,8 +23,8 @@ export function passwordResetTemplate(name: string, link: string): string {
 export function vetInvitationTemplate(name: string | undefined, adminName: string, link: string): string {
   return wrapper(`
     <p>Hola${name ? ` ${name}` : ""},</p>
-    <p>${adminName} te invitó a unirte a PawCare como Veterinario. Hacé clic en el botón de abajo para completar tu registro — el enlace vence en 7 días.</p>
+    <p>${adminName} te invitó a unirte a PawCare como Veterinario. Haz clic en el botón de abajo para completar tu registro — el enlace vence en 7 días.</p>
     <a href="${link}" style="${BUTTON_STYLE}">Completar registro</a>
-    <p style="${FOOTER_STYLE}">Si no esperabas esta invitación, podés ignorar este correo.</p>
+    <p style="${FOOTER_STYLE}">Si no esperabas esta invitación, puedes ignorar este correo.</p>
   `);
 }

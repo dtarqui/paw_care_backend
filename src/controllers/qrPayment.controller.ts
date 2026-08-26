@@ -7,7 +7,7 @@ export const qrPaymentController = {
   generate: asyncHandler(async (req: Request, res: Response) => {
     const { visitId } = req.body as { visitId?: number };
     if (!visitId) {
-      return res.status(400).json({ error: "visitId es obligatorio" });
+      return res.status(400).json({ error: "La atención a cobrar es obligatoria" });
     }
     const charge = await qrPaymentService.generate(visitId);
     res.status(201).json({ charge });

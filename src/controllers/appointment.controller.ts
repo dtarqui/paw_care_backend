@@ -16,7 +16,7 @@ export const appointmentController = {
     const vetId = Number(req.query.vetId);
     const date = String(req.query.date ?? "");
     if (!vetId || !date) {
-      return res.status(400).json({ error: "vetId y date son obligatorios" });
+      return res.status(400).json({ error: "El veterinario y la fecha son obligatorios" });
     }
     res.json({ slots: await appointmentService.availability(vetId, date) });
   }),

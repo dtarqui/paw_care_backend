@@ -128,7 +128,7 @@ export const medicationService = {
     for (const item of items) {
       const medication = await medicationRepository.findById(item.medicationId);
       if (!medication) {
-        throw new InvalidMedicationDataError(`El medicamento ${item.medicationId} no existe`);
+        throw new InvalidMedicationDataError("Uno de los medicamentos seleccionados ya no existe");
       }
       if (medication.currentStock < item.quantity) {
         throw new InsufficientStockError(medication.name);

@@ -2,7 +2,7 @@ import { medicalVisitRepository } from "../repositories/medicalVisit.repository"
 import { paymentRepository } from "../repositories/payment.repository";
 import { petRepository } from "../repositories/pet.repository";
 import { vetRepository } from "../repositories/vet.repository";
-import { PaymentMethod } from "../types";
+import { PaymentMethod, VisitPaymentStatus } from "../types";
 
 export interface ReportFilters {
   from?: string;
@@ -30,7 +30,7 @@ export interface VisitSummary {
   vet: string;
   serviceType: string;
   consultationFee: number;
-  paymentStatus: string;
+  paymentStatus: VisitPaymentStatus;
 }
 
 export interface ServiceTypeGroup {

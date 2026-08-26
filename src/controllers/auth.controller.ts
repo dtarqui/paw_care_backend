@@ -27,7 +27,7 @@ export const authController = {
   resetWithToken: asyncHandler(async (req: Request, res: Response) => {
     const { token, newPassword } = req.body as { token?: string; newPassword?: string };
     if (!token || !newPassword) {
-      return res.status(400).json({ error: "token y newPassword son obligatorios" });
+      return res.status(400).json({ error: "El enlace y la contraseña nueva son obligatorios" });
     }
     await authService.resetWithToken(token, newPassword);
     res.json({ ok: true });

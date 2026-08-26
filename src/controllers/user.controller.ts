@@ -22,7 +22,7 @@ export const userController = {
     const id = Number(req.params.id);
     const { status } = req.body as { status?: "ACTIVE" | "INACTIVE" };
     if (status !== "ACTIVE" && status !== "INACTIVE") {
-      return res.status(400).json({ error: "El estado debe ser ACTIVE o INACTIVE" });
+      return res.status(400).json({ error: "El estado debe ser activo o inactivo" });
     }
     const user = await userService.changeStatus(id, status, req.user!.id);
     res.json({ user });
@@ -53,7 +53,7 @@ export const userController = {
       newPassword?: string;
     };
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({ error: "currentPassword y newPassword son obligatorios" });
+      return res.status(400).json({ error: "La contraseña actual y la nueva son obligatorias" });
     }
     await userService.changePassword(req.user!.id, currentPassword, newPassword);
     res.json({ ok: true });
@@ -63,7 +63,7 @@ export const userController = {
     const id = Number(req.params.id);
     const { newPassword } = req.body as { newPassword?: string };
     if (!newPassword) {
-      return res.status(400).json({ error: "newPassword es obligatorio" });
+      return res.status(400).json({ error: "La contraseña nueva es obligatoria" });
     }
     await userService.resetPassword(id, newPassword, req.user!.id);
     res.json({ ok: true });

@@ -145,6 +145,19 @@ Refactor transversal de nomenclatura, sin cambios funcionales: **todo identifica
 
 ---
 
+## Correcciones y mejoras (sesión 13 — auditoría completa inglés/español)
+
+Contraparte de la sesión 13 del frontend. Del backend sale texto que el usuario lee tal cual —
+mensajes de error y el contenido de los Excel/PDF que descarga — y ahí quedaba inglés.
+
+- [x] **12 mensajes de error nombraban el campo por su clave JSON** en vez de por su etiqueta en pantalla: `"El parámetro nationalId es obligatorio"` → «El CI es obligatorio para buscar», `"currentPassword y newPassword son obligatorios"` → «La contraseña actual y la nueva son obligatorias», `"El estado debe ser ACTIVE o INACTIVE"` → «El estado debe ser activo o inactivo», `"visitId y method son obligatorios"` → «La atención y el método de pago son obligatorios», etc. El **nombre** de la clase de error sigue en inglés (`PetNotFoundError`); solo cambió el texto. El JSON de la API no se tocó.
+- [x] **`utils/labels.ts` nuevo** — el Excel de respaldo completo (HU15) y los reportes en Excel/PDF escribían el valor crudo del enum en la celda: `ADMIN`, `ACTIVE`, `CASH`, `CONFIRMED`, `PAID`, `VACCINE`. Ahora `label.role`, `label.recordStatus`, `label.appointmentStatus`, `label.visitPaymentStatus`, `label.paymentMethod` y `label.preventiveControlType` los traducen al escribir el archivo. Es el equivalente de servidor de `StatusBadge.tsx` / `lib/roles.ts`, documentado en `docs/GLOSARIO_EN_ES.md` §9. Devuelve el valor crudo si falta una traducción: si el enum crece y nadie agrega la etiqueta, se nota, pero la exportación no rompe.
+- [x] **`report.service.ts`: `paymentStatus` pasó de `string` a `VisitPaymentStatus`** — hacía falta para traducirlo con seguridad de tipos, y de paso el tipo ahora dice la verdad.
+- [x] **Correos sin voseo rioplatense** (`lib/email-templates.ts`): «hacé clic» → «haz clic», «podés ignorar» → «puedes ignorar». Es la forma que usa el resto de la aplicación.
+- [x] Barrido de todos los identificadores del backend: ya estaban íntegramente en inglés, no hubo nada que renombrar. Verificado con `tsc --noEmit` y `jest` (24/24).
+
+---
+
 ## Tarea 00 — Setup del backend
 
 **Depende de:** nada (primera tarea).

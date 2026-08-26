@@ -8,6 +8,7 @@ import { petRepository } from "../repositories/pet.repository";
 import { preventiveControlRepository } from "../repositories/preventiveControl.repository";
 import { userRepository } from "../repositories/user.repository";
 import { vetRepository } from "../repositories/vet.repository";
+import { label } from "../utils/labels";
 
 // Los `header` van en español: son los títulos de columna que ve quien abre el
 // Excel. Las `key` van en inglés, como el resto del código.
@@ -59,8 +60,8 @@ export async function generateFullExport(): Promise<ExcelJS.Workbook> {
       paternalLastName: u.paternalLastName,
       nationalId: u.nationalId,
       username: u.username,
-      role: u.role,
-      status: u.status,
+      role: label.role(u.role),
+      status: label.recordStatus(u.status),
     }))
   );
 
@@ -128,7 +129,7 @@ export async function generateFullExport(): Promise<ExcelJS.Workbook> {
       pet: a.pet.name,
       vet: `${a.vet.firstName} ${a.vet.paternalLastName}`,
       consultationType: a.consultationType,
-      status: a.status,
+      status: label.appointmentStatus(a.status),
     }))
   );
 
@@ -157,7 +158,7 @@ export async function generateFullExport(): Promise<ExcelJS.Workbook> {
         serviceType: v.serviceType,
         diagnosis: v.diagnosis,
         consultationFee: v.consultationFee,
-        paymentStatus: v.paymentStatus,
+        paymentStatus: label.visitPaymentStatus(v.paymentStatus),
       };
     })
   );
@@ -173,7 +174,7 @@ export async function generateFullExport(): Promise<ExcelJS.Workbook> {
     ],
     payments.map((p) => ({
       visitId: p.visitId,
-      method: p.method,
+      method: label.paymentMethod(p.method),
       amount: p.amount,
       date: p.date.slice(0, 10),
     }))
@@ -190,7 +191,7 @@ export async function generateFullExport(): Promise<ExcelJS.Workbook> {
     ],
     controls.map((c) => ({
       pet: petById.get(c.petId)?.name ?? "—",
-      type: c.type,
+      type: label.preventiveControlType(c.type),
       appliedOn: c.appliedOn,
       nextDoseOn: c.nextDoseOn,
     }))

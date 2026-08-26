@@ -4,6 +4,7 @@ import PDFDocument from "pdfkit";
 import { ReportFilters, reportService } from "../services/report.service";
 import { PaymentMethod } from "../types";
 import { asyncHandler } from "../utils/asyncHandler";
+import { label } from "../utils/labels";
 
 function filtersFromQuery(req: Request): ReportFilters {
   return {
@@ -54,7 +55,9 @@ export const reportController = {
         { header: "Monto (Bs.)", key: "consultationFee", width: 14 },
         { header: "Estado de pago", key: "paymentStatus", width: 16 },
       ];
-      sheet.addRows(await reportService.visitsByPeriod(filters));
+      const visits = await reportService.visitsByPeriod(filters);
+      // El estado viaja en inglés (PENDING/PAID); en la planilla se lee en español.
+      sheet.addRows(visits.map((v) => ({ ...v, paymentStatus: label.visitPaymentStatus(v.paymentStatus) })));
     }
     sheet.getRow(1).font = { bold: true };
 
@@ -102,7 +105,7 @@ export const reportController = {
           v.pet,
           v.serviceType,
           v.consultationFee.toFixed(2),
-          v.paymentStatus,
+          label.visitPaymentStatus(v.paymentStatus),
         ])
       );
     }

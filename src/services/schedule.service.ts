@@ -72,7 +72,7 @@ export const scheduleService = {
 
     for (const s of schedules) {
       if (s.dayOfWeek < 0 || s.dayOfWeek > 6) {
-        throw new InvalidScheduleDataError("dayOfWeek debe estar entre 0 (domingo) y 6 (sábado)");
+        throw new InvalidScheduleDataError("El día de la semana debe estar entre 0 (domingo) y 6 (sábado)");
       }
       if (!/^\d{2}:\d{2}$/.test(s.startTime) || !/^\d{2}:\d{2}$/.test(s.endTime)) {
         throw new InvalidScheduleDataError("Formato de hora inválido (esperado HH:mm)");
