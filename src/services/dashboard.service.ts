@@ -46,6 +46,7 @@ const MODULES_BY_ROLE: Record<Role, DashboardModule[]> = {
     // La auditoría es el registro de acciones administrativas sobre cuentas: se lee
     // junto al listado de usuarios, no como una pantalla aparte.
     { id: "users", title: "Usuarios", description: "Cuentas, roles y registro de auditoría", route: "/app/users", icon: "Users", group: "system", tabs: ["list", "audit"] },
+    { id: "info", title: "Información", description: "Manual de uso del sistema", route: "/app/info", icon: "BookOpen", group: "system" },
     { id: "settings", title: "Configuración", description: "Apariencia y datos de tu cuenta", route: "/app/settings", icon: "Settings", group: "system" },
   ],
   VET: [
@@ -55,6 +56,7 @@ const MODULES_BY_ROLE: Record<Role, DashboardModule[]> = {
     { id: "medical-visits", title: "Atención Médica", description: "Registrar diagnóstico y tratamiento", route: "/app/medical-visits", icon: "Stethoscope", group: "clinic" },
     { id: "preventive-controls", title: "Control Preventivo", description: "Vacunación y desparasitación", route: "/app/preventive-controls", icon: "ShieldPlus", group: "clinic" },
 
+    { id: "info", title: "Información", description: "Manual de uso del sistema", route: "/app/info", icon: "BookOpen", group: "system" },
     { id: "settings", title: "Configuración", description: "Apariencia y datos de tu cuenta", route: "/app/settings", icon: "Settings", group: "system" },
   ],
   RECEPTIONIST: [
@@ -68,6 +70,7 @@ const MODULES_BY_ROLE: Record<Role, DashboardModule[]> = {
 
     { id: "payments", title: "Pagos", description: "Registrar cobros por atención", route: "/app/payments", icon: "Wallet", group: "admin" },
 
+    { id: "info", title: "Información", description: "Manual de uso del sistema", route: "/app/info", icon: "BookOpen", group: "system" },
     { id: "settings", title: "Configuración", description: "Apariencia y datos de tu cuenta", route: "/app/settings", icon: "Settings", group: "system" },
   ],
 };
