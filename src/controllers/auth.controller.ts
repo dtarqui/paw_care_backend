@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { authService } from "../services/auth.service";
 import { asyncHandler } from "../utils/asyncHandler";
+import { clientIp, clientUserAgent } from "../utils/requestContext";
 
 export const authController = {
   login: asyncHandler(async (req: Request, res: Response) => {
@@ -8,7 +9,10 @@ export const authController = {
     if (!username || !password) {
       return res.status(400).json({ error: "Usuario y contraseña son obligatorios", code: "UsernameAndPasswordRequired" });
     }
-    const result = await authService.login(username, password);
+    const result = await authService.login(username, password, {
+      ipAddress: clientIp(req),
+      userAgent: clientUserAgent(req),
+    });
     res.json(result);
   }),
 

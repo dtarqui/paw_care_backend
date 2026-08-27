@@ -100,6 +100,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   sentInvitations     VetInvitation[]
   auditLogs           AuditLog[]
+  loginEvents         LoginEvent[]
 
   @@index([role])
   @@map("st_users")
@@ -410,4 +411,37 @@ model AuditLog {
   @@index([date])
   @@index([actorId])
   @@map("st_audit_logs")
+}
+
+enum LoginOutcome {
+  SUCCESS
+  INVALID_CREDENTIALS
+  INACTIVE_ACCOUNT
+}
+
+/// Registro de intentos de inicio de sesión: quién entró, cuándo, desde qué IP y con
+/// qué navegador — y también los intentos fallidos, que son justamente los que
+/// interesan cuando alguien pregunta "¿quién estuvo intentando entrar?".
+///
+/// Va aparte de `AuditLog` a propósito: aquel registra acciones administrativas
+/// sobre OTRAS cuentas y siempre tiene un actor conocido, mientras que un intento
+/// fallido puede no corresponder a ningún usuario existente. Además tiene campos
+/// propios (IP, user agent, resultado) y un volumen mucho mayor: mezclarlos taparía
+/// las pocas acciones administrativas que la auditoría existe para mostrar.
+model LoginEvent {
+  id        Int          @id @default(autoincrement())
+  /// Nulo cuando el usuario tecleado no existe: igual se guarda el intento.
+  userId    Int?
+  user      User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /// El nombre de usuario tal como se tecleó, exista o no.
+  username  String       @db.VarChar(50)
+  outcome   LoginOutcome
+  ipAddress String?      @db.VarChar(60)
+  userAgent String?      @db.VarChar(400)
+  date      DateTime     @default(now())
+
+  @@index([date])
+  @@index([userId])
+  @@index([outcome, date])
+  @@map("st_login_events")
 }

@@ -9,6 +9,14 @@ import { router } from "./routes";
 export function createApp() {
   const app = express();
 
+  // Detrás del proxy de Vercel la IP del cliente llega en X-Forwarded-For; sin esto
+  // `req.ip` sería siempre la del proxy. Importa por partida doble: el registro de
+  // ingresos anotaría la misma IP para todo el mundo, y el freno anti fuerza-bruta
+  // del login (10 intentos por IP) pasaría a ser un cupo único compartido por toda
+  // la clínica. Es 1 salto —el del proxy— y no `true`, que sería confiar en cualquier
+  // cabecera que llegue.
+  app.set("trust proxy", 1);
+
   app.use(helmet());
 
   // Si FRONTEND_URL está configurada, solo ese origen (+ localhost de desarrollo)

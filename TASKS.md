@@ -173,6 +173,27 @@ Verificado con `tsc --noEmit` y `jest` (24/24).
 
 ---
 
+## Correcciones y mejoras (sesión 16 — registro de inicios de sesión)
+
+Hasta acá no quedaba rastro de quién entraba al sistema: la auditoría solo cubría acciones administrativas sobre otras cuentas. Ahora cada intento se registra.
+
+- [x] **Modelo `LoginEvent` (`st_login_events`)** con `userId` (nulo si el usuario tecleado no existe), el `username` tal como se escribió, `outcome`, `ipAddress`, `userAgent` y `date`. Va **aparte de `AuditLog`** a propósito: un intento fallido puede no corresponder a ninguna cuenta —y `AuditLog.actorId` responde "quién lo hizo", que ahí no se sabe—, necesita campos propios, y tiene un volumen que taparía las pocas acciones administrativas que la auditoría existe para mostrar.
+- [x] **Se registran los tres resultados**: `SUCCESS`, `INVALID_CREDENTIALS` (contraseña incorrecta o usuario inexistente) e `INACTIVE_ACCOUNT`. **El servidor distingue el motivo; el cliente no**: la respuesta sigue siendo el mismo error genérico, para que el login no sirva para averiguar qué nombres de usuario existen.
+- [x] **El registro nunca bloquea el login**: la escritura va en try/catch y, si falla, se anota en el log del servidor y la persona entra igual. Hay un test que lo fija.
+- [x] **`GET /api/login-events`** (`requireRole('ADMIN')`, paginado) con filtros `?outcome=success|failed` y `?username=`, más un resumen de las últimas 24 h para la cabecera de la pantalla.
+- [x] **`app.set("trust proxy", 1)`**: detrás del proxy de Vercel la IP real llega en `X-Forwarded-For` y sin esto `req.ip` era la del proxy para todo el mundo. **Arregla de paso un bug latente**: el freno anti fuerza-bruta del login (10 intentos por IP) era en producción un cupo único compartido por toda la clínica.
+- [x] **5 tests nuevos** sobre el registro de intentos (resultado correcto en cada caso, y que un fallo al registrar no impide entrar). Total: 29.
+
+### ☠️ Incidente: se vació la base de datos
+
+Al generar el SQL de la migración se corrió `prisma migrate diff --from-migrations … --shadow-database-url "<DIRECT_URL>"`. Una *shadow database* es una que Prisma tiene permitido **borrar y rehacer** para calcular el diff; apuntarla a la base real la vacía, sin confirmación, porque eso es literalmente lo que el flag autoriza. `--from-migrations` **exige** una shadow database, y ahí está la trampa: el comando parece de solo lectura y no lo es.
+
+Se perdieron todas las tablas `st_*` —recuperadas con `prisma db seed`, porque eran datos de demostración— y también las `mt_*` del otro proyecto, que **no** son recuperables desde acá.
+
+`CLAUDE.md` quedó con la advertencia y con la forma segura de generar una migración en este proyecto: `migrate diff --from-schema-datamodel <copia previa> --to-schema-datamodel <nuevo> --script`, que no toca ninguna base. Verificado.
+
+---
+
 ## Tarea 00 — Setup del backend
 
 **Depende de:** nada (primera tarea).

@@ -40,6 +40,8 @@ async function clearDatabase() {
   await prisma.schedule.deleteMany();
   await prisma.medication.deleteMany();
   await prisma.auditLog.deleteMany();
+  // Igual que la auditoría: es una bitácora de la instalación anterior, no datos demo.
+  await prisma.loginEvent.deleteMany();
   await prisma.passwordResetToken.deleteMany();
   await prisma.vetInvitation.deleteMany();
   await prisma.vet.deleteMany();

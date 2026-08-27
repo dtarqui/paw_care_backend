@@ -2,9 +2,10 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { passwordResetTemplate } from "../lib/email-templates";
 import { sendEmail } from "../lib/mailer";
+import { loginEventRepository } from "../repositories/loginEvent.repository";
 import { passwordResetTokenRepository } from "../repositories/passwordResetToken.repository";
 import { userRepository } from "../repositories/user.repository";
-import { PublicUser, User } from "../types";
+import { LoginOutcome, PublicUser, User } from "../types";
 import { frontendBaseUrl } from "../utils/url";
 
 const JWT_SECRET = process.env.JWT_SECRET ?? "demo-secret-cambiar-en-produccion";
@@ -36,14 +37,64 @@ function toPublic(user: User): PublicUser {
   return publicUser;
 }
 
+/** De dónde vino el intento. Lo arma el controlador a partir del request. */
+export interface LoginContext {
+  ipAddress?: string;
+  userAgent?: string;
+}
+
+/** El registro del intento nunca debe impedir entrar ni tapar el error real: si
+ * falla la escritura, se anota en el log del servidor y el login sigue su curso. */
+async function recordAttempt(
+  username: string,
+  outcome: LoginOutcome,
+  context: LoginContext,
+  userId?: number
+): Promise<void> {
+  try {
+    await loginEventRepository.record({
+      userId,
+      username: username.slice(0, 50),
+      outcome,
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent?.slice(0, 400),
+    });
+  } catch (err) {
+    console.error("No se pudo registrar el intento de inicio de sesión:", err);
+  }
+}
+
 export const authService = {
-  async login(username: string, password: string): Promise<{ token: string; user: PublicUser }> {
+  /**
+   * Cada intento queda registrado en `st_login_events` — los exitosos y los fallidos.
+   *
+   * El servidor sí distingue por qué falló (usuario inexistente, cuenta desactivada,
+   * contraseña incorrecta) porque esa diferencia es justamente lo que sirve para
+   * revisar después qué pasó. Lo que **no** cambia es la respuesta al cliente: sigue
+   * siendo el mismo error genérico, para no convertir el login en una forma de
+   * averiguar qué nombres de usuario existen.
+   */
+  async login(
+    username: string,
+    password: string,
+    context: LoginContext = {}
+  ): Promise<{ token: string; user: PublicUser }> {
     const user = await userRepository.findByUsername(username);
-    if (!user || user.status === "INACTIVE" || !(await bcrypt.compare(password, user.passwordHash))) {
-      // Mensaje genérico a propósito: no revela si falló el usuario, la contraseña,
-      // o si la cuenta existe pero está desactivada (HU1).
+
+    if (!user) {
+      await recordAttempt(username, "INVALID_CREDENTIALS", context);
       throw new InvalidCredentialsError();
     }
+    if (user.status === "INACTIVE") {
+      await recordAttempt(username, "INACTIVE_ACCOUNT", context, user.id);
+      throw new InvalidCredentialsError();
+    }
+    if (!(await bcrypt.compare(password, user.passwordHash))) {
+      await recordAttempt(username, "INVALID_CREDENTIALS", context, user.id);
+      throw new InvalidCredentialsError();
+    }
+
+    await recordAttempt(username, "SUCCESS", context, user.id);
     const publicUser = toPublic(user);
     const token = jwt.sign({ sub: user.id, role: user.role, name: user.firstName }, JWT_SECRET, {
       expiresIn: JWT_EXPIRES_IN,

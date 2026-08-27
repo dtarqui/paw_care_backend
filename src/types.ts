@@ -49,6 +49,19 @@ export interface AuditLog {
   date: string;
 }
 
+export type LoginOutcome = "SUCCESS" | "INVALID_CREDENTIALS" | "INACTIVE_ACCOUNT";
+
+export interface LoginEvent {
+  id: number;
+  /** Ausente cuando el usuario tecleado no existe — el intento se guarda igual. */
+  user?: { firstName: string; paternalLastName: string; role: Role };
+  username: string;
+  outcome: LoginOutcome;
+  ipAddress?: string;
+  userAgent?: string;
+  date: string;
+}
+
 export interface PendingInvitation {
   id: number;
   email: string;

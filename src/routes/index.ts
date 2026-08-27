@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { appointmentController } from "../controllers/appointment.controller";
 import { auditLogController } from "../controllers/auditLog.controller";
+import { loginEventController } from "../controllers/loginEvent.controller";
 import { authController } from "../controllers/auth.controller";
 import { dashboardController } from "../controllers/dashboard.controller";
 import { exportController } from "../controllers/export.controller";
@@ -56,6 +57,8 @@ router.patch("/users/:id/password", requireAuth, requireRole("ADMIN"), userContr
 
 // Auditoría — solo Administrador
 router.get("/audit-logs", requireAuth, requireRole("ADMIN"), auditLogController.list);
+// Quién entró, cuándo y desde qué IP — incluidos los intentos fallidos.
+router.get("/login-events", requireAuth, requireRole("ADMIN"), loginEventController.list);
 
 // Búsqueda global (Ctrl/Cmd+K) — una sola caja que resuelve "¿quién es Rocky?" sin
 // saber de antemano en qué pantalla mirar. Qué entidades cubre lo definen los

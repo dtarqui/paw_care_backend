@@ -45,7 +45,7 @@ const MODULES_BY_ROLE: Record<Role, DashboardModule[]> = {
 
     // La auditoría es el registro de acciones administrativas sobre cuentas: se lee
     // junto al listado de usuarios, no como una pantalla aparte.
-    { id: "users", title: "Usuarios", description: "Cuentas, roles y registro de auditoría", route: "/app/users", icon: "Users", group: "system", tabs: ["list", "audit"] },
+    { id: "users", title: "Usuarios", description: "Cuentas, roles, auditoría e ingresos al sistema", route: "/app/users", icon: "Users", group: "system", tabs: ["list", "audit", "logins"] },
     { id: "info", title: "Información", description: "Manual de uso del sistema", route: "/app/info", icon: "BookOpen", group: "system" },
     { id: "settings", title: "Configuración", description: "Apariencia y datos de tu cuenta", route: "/app/settings", icon: "Settings", group: "system" },
   ],
