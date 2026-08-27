@@ -6,7 +6,7 @@ export const authController = {
   login: asyncHandler(async (req: Request, res: Response) => {
     const { username, password } = req.body as { username?: string; password?: string };
     if (!username || !password) {
-      return res.status(400).json({ error: "Usuario y contraseña son obligatorios" });
+      return res.status(400).json({ error: "Usuario y contraseña son obligatorios", code: "UsernameAndPasswordRequired" });
     }
     const result = await authService.login(username, password);
     res.json(result);
@@ -15,7 +15,7 @@ export const authController = {
   requestPasswordRecovery: asyncHandler(async (req: Request, res: Response) => {
     const { username } = req.body as { username?: string };
     if (!username) {
-      return res.status(400).json({ error: "El nombre de usuario es obligatorio" });
+      return res.status(400).json({ error: "El nombre de usuario es obligatorio", code: "UsernameRequired" });
     }
     await authService.requestPasswordRecovery(username);
     res.json({
@@ -27,7 +27,7 @@ export const authController = {
   resetWithToken: asyncHandler(async (req: Request, res: Response) => {
     const { token, newPassword } = req.body as { token?: string; newPassword?: string };
     if (!token || !newPassword) {
-      return res.status(400).json({ error: "El enlace y la contraseña nueva son obligatorios" });
+      return res.status(400).json({ error: "El enlace y la contraseña nueva son obligatorios", code: "TokenAndPasswordRequired" });
     }
     await authService.resetWithToken(token, newPassword);
     res.json({ ok: true });

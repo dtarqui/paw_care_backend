@@ -7,7 +7,7 @@ export const loginRateLimit = rateLimit({
   limit: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Demasiados intentos de inicio de sesión. Intenta de nuevo en unos minutos." },
+  message: { error: "Demasiados intentos de inicio de sesión. Intenta de nuevo en unos minutos.", code: "TooManyLoginAttempts" },
 });
 
 // El preregistro de veterinario también es público (sin JWT) — mismo motivo que el
@@ -17,7 +17,7 @@ export const preRegistrationRateLimit = rateLimit({
   limit: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Demasiadas solicitudes de registro. Intenta de nuevo más tarde." },
+  message: { error: "Demasiadas solicitudes de registro. Intenta de nuevo más tarde.", code: "TooManyRegistrationRequests" },
 });
 
 // "Olvidé mi contraseña" es público y dispara un envío de email real — sin límite,
@@ -27,5 +27,5 @@ export const forgotPasswordRateLimit = rateLimit({
   limit: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Demasiadas solicitudes de recuperación. Intenta de nuevo más tarde." },
+  message: { error: "Demasiadas solicitudes de recuperación. Intenta de nuevo más tarde.", code: "TooManyRecoveryRequests" },
 });

@@ -20,7 +20,7 @@ export const paymentController = {
       amount?: number;
     };
     if (!visitId || !method) {
-      return res.status(400).json({ error: "La atención y el método de pago son obligatorios" });
+      return res.status(400).json({ error: "La atención y el método de pago son obligatorios", code: "VisitAndMethodRequired" });
     }
     const payment = await paymentService.register(visitId, method, Number(amount));
     res.status(201).json({ payment });

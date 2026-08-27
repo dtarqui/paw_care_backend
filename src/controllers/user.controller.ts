@@ -22,7 +22,7 @@ export const userController = {
     const id = Number(req.params.id);
     const { status } = req.body as { status?: "ACTIVE" | "INACTIVE" };
     if (status !== "ACTIVE" && status !== "INACTIVE") {
-      return res.status(400).json({ error: "El estado debe ser activo o inactivo" });
+      return res.status(400).json({ error: "El estado debe ser activo o inactivo", code: "InvalidRecordStatus" });
     }
     const user = await userService.changeStatus(id, status, req.user!.id);
     res.json({ user });
@@ -36,7 +36,7 @@ export const userController = {
       specialty?: string;
     };
     if (role !== "ADMIN" && role !== "VET" && role !== "RECEPTIONIST") {
-      return res.status(400).json({ error: "Rol inválido" });
+      return res.status(400).json({ error: "Rol inválido", code: "InvalidRole" });
     }
     const user = await userService.changeRole(id, role, { licenseNumber, specialty }, req.user!.id);
     res.json({ user });
@@ -53,7 +53,7 @@ export const userController = {
       newPassword?: string;
     };
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({ error: "La contraseña actual y la nueva son obligatorias" });
+      return res.status(400).json({ error: "La contraseña actual y la nueva son obligatorias", code: "CurrentAndNewPasswordRequired" });
     }
     await userService.changePassword(req.user!.id, currentPassword, newPassword);
     res.json({ ok: true });
@@ -63,7 +63,7 @@ export const userController = {
     const id = Number(req.params.id);
     const { newPassword } = req.body as { newPassword?: string };
     if (!newPassword) {
-      return res.status(400).json({ error: "La contraseña nueva es obligatoria" });
+      return res.status(400).json({ error: "La contraseña nueva es obligatoria", code: "NewPasswordRequired" });
     }
     await userService.resetPassword(id, newPassword, req.user!.id);
     res.json({ ok: true });
@@ -72,7 +72,7 @@ export const userController = {
   invite: asyncHandler(async (req: AuthRequest, res: Response) => {
     const { email, name } = req.body as { email?: string; name?: string };
     if (!email) {
-      return res.status(400).json({ error: "El email es obligatorio" });
+      return res.status(400).json({ error: "El email es obligatorio", code: "EmailRequired" });
     }
     await vetInvitationService.invite(req.user!.id, email, name);
     res.status(201).json({ ok: true });

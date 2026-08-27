@@ -11,7 +11,7 @@ export const uploadExcel = multer({
 export const importController = {
   clients: asyncHandler(async (req: Request, res: Response) => {
     if (!req.file) {
-      return res.status(400).json({ error: "Debes adjuntar un archivo .xlsx" });
+      return res.status(400).json({ error: "Debes adjuntar un archivo .xlsx", code: "FileRequired" });
     }
     const result = await importService.importClients(req.file.buffer);
     res.json(result);

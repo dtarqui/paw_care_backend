@@ -7,7 +7,7 @@ export const qrPaymentController = {
   generate: asyncHandler(async (req: Request, res: Response) => {
     const { visitId } = req.body as { visitId?: number };
     if (!visitId) {
-      return res.status(400).json({ error: "La atención a cobrar es obligatoria" });
+      return res.status(400).json({ error: "La atención a cobrar es obligatoria", code: "VisitRequired" });
     }
     const charge = await qrPaymentService.generate(visitId);
     res.status(201).json({ charge });
@@ -25,7 +25,7 @@ export const qrPaymentController = {
   webhook: asyncHandler(async (req: Request, res: Response) => {
     const secret = req.header("X-Webhook-Secret");
     if (!verifyWebhookNotification(secret)) {
-      return res.status(401).json({ error: "Firma de webhook inválida" });
+      return res.status(401).json({ error: "Firma de webhook inválida", code: "InvalidWebhookSignature" });
     }
     const { externalReference } = req.body as { externalReference?: string };
     if (externalReference) {

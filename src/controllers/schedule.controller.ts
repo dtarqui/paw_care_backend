@@ -15,7 +15,7 @@ export const scheduleController = {
       schedules?: { dayOfWeek: number; startTime: string; endTime: string }[];
     };
     if (!Array.isArray(schedules)) {
-      return res.status(400).json({ error: "El horario enviado no tiene el formato esperado" });
+      return res.status(400).json({ error: "El horario enviado no tiene el formato esperado", code: "InvalidScheduleFormat" });
     }
     const updated = await scheduleService.update(vetId, schedules, req.user!);
     res.json({ schedules: updated });

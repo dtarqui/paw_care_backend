@@ -158,6 +158,21 @@ mensajes de error y el contenido de los Excel/PDF que descarga — y ahí quedab
 
 ---
 
+## Correcciones y mejoras (sesión 14 — el backend habla los dos idiomas)
+
+Contraparte de la sesión 14 del frontend. Del backend salen dos cosas que una persona lee: los mensajes de error y los archivos que descarga.
+
+- [x] **Cada respuesta de error lleva `code` además de `error`.** `error.middleware.ts` manda el nombre de la clase (`PetNotFoundError`, `ScheduleConflictError`), y los controladores y middlewares mandan un código semántico (`Forbidden`, `NationalIdRequired`, `TooManyLoginAttempts`). El frontend traduce por ese código y **cae al `error` en español** cuando no tiene la traducción, así que un error nuevo se ve legible en vez de mostrar una clave cruda. El contrato no se rompió: `error` sigue viajando igual que antes.
+- [x] **`utils/labels.ts` pasó a ser bilingüe.** `readLanguage(req)` lee `Accept-Language` —que el cliente HTTP del frontend manda en cada request con el idioma elegido— y `labelsFor(language)` devuelve las etiquetas de enum más un `text(key)` con encabezados de columna, nombres de hoja, títulos de reporte y **nombres de archivo**. Lo usan `export.service.ts` (respaldo completo, HU15) y `report.controller.ts` (Excel y PDF).
+- [x] **El nombre del archivo descargado lo decide el backend**, en el idioma pedido, vía `Content-Disposition` — el frontend solo conserva un respaldo por si ese header no llegara. Antes había dos fuentes para lo mismo.
+- [x] **El JSON de la API no cambió**: los enums siguen viajando en inglés y las claves también. Solo se traduce lo que el backend escribe *dentro de un archivo*.
+
+**Lo que se queda en español a propósito:** el texto de los recordatorios de WhatsApp (`reminder.service.ts`) porque lo lee el cliente de la clínica y no el personal; el `details` de la auditoría, que es el registro de lo que pasó y no una etiqueta; y el mensaje variable de las clases `Invalid*DataError`, que nombra el campo que falta — un solo código no puede cubrir muchos mensajes distintos.
+
+Verificado con `tsc --noEmit` y `jest` (24/24).
+
+---
+
 ## Tarea 00 — Setup del backend
 
 **Depende de:** nada (primera tarea).

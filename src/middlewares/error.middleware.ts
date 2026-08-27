@@ -38,13 +38,19 @@ import { InvalidInvitationError } from "../services/vetInvitation.service";
 
 // Middleware de errores centralizado: cada servicio lanza errores de dominio
 // (clases propias) y aquí es el único lugar que los traduce a códigos HTTP.
+//
+// Cada respuesta lleva además `code` con el nombre de la clase de error. El
+// frontend lo usa para mostrar el mensaje en el idioma elegido (`errors.codes.*`),
+// y cae al `error` en español que viaja al lado cuando no tiene esa traducción —
+// las clases con mensaje variable (los `Invalid*DataError`, que dicen qué campo
+// falta) se ven en español, y está bien: siguen siendo legibles.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function errorMiddleware(err: unknown, _req: Request, res: Response, _next: NextFunction) {
   if (err instanceof InvalidCredentialsError || err instanceof WrongCurrentPasswordError) {
-    return res.status(401).json({ error: err.message });
+    return res.status(401).json({ error: err.message, code: err.name });
   }
   if (err instanceof InvalidPaymentError || err instanceof VisitAlreadyPaidError) {
-    return res.status(400).json({ error: err.message });
+    return res.status(400).json({ error: err.message, code: err.name });
   }
   if (
     err instanceof AppointmentNotFoundError ||
@@ -55,10 +61,10 @@ export function errorMiddleware(err: unknown, _req: Request, res: Response, _nex
     err instanceof MedicationNotFoundError ||
     err instanceof QrChargeNotFoundError
   ) {
-    return res.status(404).json({ error: err.message });
+    return res.status(404).json({ error: err.message, code: err.name });
   }
   if (err instanceof ScheduleConflictError || err instanceof MedicationHasMovesError) {
-    return res.status(409).json({ error: err.message });
+    return res.status(409).json({ error: err.message, code: err.name });
   }
   if (
     err instanceof InvalidAppointmentDataError ||
@@ -74,10 +80,10 @@ export function errorMiddleware(err: unknown, _req: Request, res: Response, _nex
     err instanceof InvalidResetTokenError ||
     err instanceof InvalidInvitationError
   ) {
-    return res.status(400).json({ error: err.message });
+    return res.status(400).json({ error: err.message, code: err.name });
   }
   if (err instanceof ForeignScheduleError) {
-    return res.status(403).json({ error: err.message });
+    return res.status(403).json({ error: err.message, code: err.name });
   }
   if (
     err instanceof DuplicateUserError ||
@@ -85,13 +91,13 @@ export function errorMiddleware(err: unknown, _req: Request, res: Response, _nex
     err instanceof InsufficientStockError ||
     err instanceof DuplicateMedicationError
   ) {
-    return res.status(409).json({ error: err.message });
+    return res.status(409).json({ error: err.message, code: err.name });
   }
   if (err instanceof EmailNotConfiguredError || err instanceof QrPaymentProviderNotConfiguredError) {
     console.error(err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message, code: err.name });
   }
 
   console.error(err);
-  return res.status(500).json({ error: "Error interno del servidor" });
+  return res.status(500).json({ error: "Error interno del servidor", code: "InternalServerError" });
 }

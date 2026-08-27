@@ -4,7 +4,7 @@ import PDFDocument from "pdfkit";
 import { ReportFilters, reportService } from "../services/report.service";
 import { PaymentMethod } from "../types";
 import { asyncHandler } from "../utils/asyncHandler";
-import { label } from "../utils/labels";
+import { Labels, labelsFor, readLanguage } from "../utils/labels";
 
 function filtersFromQuery(req: Request): ReportFilters {
   return {
@@ -13,6 +13,12 @@ function filtersFromQuery(req: Request): ReportFilters {
     serviceType: req.query.serviceType ? String(req.query.serviceType) : undefined,
     paymentMethod: req.query.paymentMethod ? (String(req.query.paymentMethod) as PaymentMethod) : undefined,
   };
+}
+
+/** Nombre del archivo descargado, en el idioma pedido. Cae al reporte de atenciones
+ * si llega un tipo desconocido, que es el mismo default que usa el resto del módulo. */
+function fileNameFor(t: Labels["text"], type: string): string {
+  return type === "revenue-by-service" ? t("file-revenue-by-service") : t("file-visits");
 }
 
 export const reportController = {
@@ -35,25 +41,28 @@ export const reportController = {
   exportExcel: asyncHandler(async (req: Request, res: Response) => {
     const type = String(req.query.type ?? "visits");
     const filters = filtersFromQuery(req);
+    const label = labelsFor(readLanguage(req));
+    const t = label.text;
     const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Reporte");
+    const sheet = workbook.addWorksheet(t("sheetReport"));
 
-    // Los `header` van en español (los ve quien abre el Excel); las `key` en inglés.
+    // Los `header` los pone `utils/labels.ts` en el idioma que pidió el navegador
+    // (los ve quien abre el Excel); las `key` van en inglés, como el resto del código.
     if (type === "revenue-by-service") {
       sheet.columns = [
-        { header: "Tipo de servicio", key: "serviceType", width: 30 },
-        { header: "Cantidad", key: "count", width: 12 },
-        { header: "Monto (Bs.)", key: "amount", width: 15 },
+        { header: t("serviceType"), key: "serviceType", width: 30 },
+        { header: t("quantity"), key: "count", width: 12 },
+        { header: t("amountBs"), key: "amount", width: 15 },
       ];
       sheet.addRows(await reportService.revenueByServiceType(filters));
     } else {
       sheet.columns = [
-        { header: "Fecha", key: "date", width: 22 },
-        { header: "Mascota", key: "pet", width: 18 },
-        { header: "Propietario", key: "owner", width: 25 },
-        { header: "Tipo de servicio", key: "serviceType", width: 20 },
-        { header: "Monto (Bs.)", key: "consultationFee", width: 14 },
-        { header: "Estado de pago", key: "paymentStatus", width: 16 },
+        { header: t("date"), key: "date", width: 22 },
+        { header: t("pet"), key: "pet", width: 18 },
+        { header: t("owner"), key: "owner", width: 25 },
+        { header: t("serviceType"), key: "serviceType", width: 20 },
+        { header: t("amountBs"), key: "consultationFee", width: 14 },
+        { header: t("paymentStatus"), key: "paymentStatus", width: 16 },
       ];
       const visits = await reportService.visitsByPeriod(filters);
       // El estado viaja en inglés (PENDING/PAID); en la planilla se lee en español.
@@ -62,7 +71,7 @@ export const reportController = {
     sheet.getRow(1).font = { bold: true };
 
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    res.setHeader("Content-Disposition", `attachment; filename="reporte-${type}.xlsx"`);
+    res.setHeader("Content-Disposition", `attachment; filename="${fileNameFor(t, type)}.xlsx"`);
     await workbook.xlsx.write(res);
     res.end();
   }),
@@ -70,20 +79,26 @@ export const reportController = {
   exportPdf: asyncHandler(async (req: Request, res: Response) => {
     const type = String(req.query.type ?? "visits");
     const filters = filtersFromQuery(req);
+    const label = labelsFor(readLanguage(req));
+    const t = label.text;
 
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="reporte-${type}.pdf"`);
+    res.setHeader("Content-Disposition", `attachment; filename="${fileNameFor(t, type)}.pdf"`);
 
     const doc = new PDFDocument({ margin: 40 });
     doc.pipe(res);
 
-    doc.fontSize(16).text("PawCare — Reporte", { align: "left" });
+    doc.fontSize(16).text(t("reportTitle"), { align: "left" });
     doc
       .fontSize(10)
       .fillColor("#666")
       .text(
-        `Tipo: ${type === "revenue-by-service" ? "Ingresos por tipo de servicio" : "Atenciones por período"}` +
-          (filters.from || filters.to ? ` · ${filters.from ?? "…"} a ${filters.to ?? "…"}` : "")
+        `${t("reportKind")}: ${
+          type === "revenue-by-service" ? t("reportRevenueByService") : t("reportVisits")
+        }` +
+          (filters.from || filters.to
+            ? ` · ${filters.from ?? "…"} ${t("reportTo")} ${filters.to ?? "…"}`
+            : "")
       );
     doc.moveDown();
     doc.fillColor("#000");
@@ -92,14 +107,14 @@ export const reportController = {
       const groups = await reportService.revenueByServiceType(filters);
       drawTable(
         doc,
-        ["Tipo de servicio", "Cantidad", "Monto (Bs.)"],
+        [t("serviceType"), t("quantity"), t("amountBs")],
         groups.map((g) => [g.serviceType, String(g.count), g.amount.toFixed(2)])
       );
     } else {
       const visits = await reportService.visitsByPeriod(filters);
       drawTable(
         doc,
-        ["Fecha", "Mascota", "Tipo de servicio", "Monto", "Estado"],
+        [t("date"), t("pet"), t("serviceType"), t("amount"), t("status")],
         visits.map((v) => [
           v.date.slice(0, 10),
           v.pet,

@@ -6,7 +6,7 @@ export const ownerController = {
   search: asyncHandler(async (req: Request, res: Response) => {
     const nationalId = String(req.query.nationalId ?? "");
     if (!nationalId) {
-      return res.status(400).json({ error: "El CI es obligatorio para buscar" });
+      return res.status(400).json({ error: "El CI es obligatorio para buscar", code: "NationalIdRequired" });
     }
     const owner = await ownerService.findByNationalId(nationalId);
     res.json({ owner: owner ?? null });

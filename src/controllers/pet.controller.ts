@@ -15,7 +15,7 @@ export const petController = {
   search: asyncHandler(async (req: Request, res: Response) => {
     const nationalId = String(req.query.nationalId ?? "");
     if (!nationalId) {
-      return res.status(400).json({ error: "El CI del propietario es obligatorio para buscar" });
+      return res.status(400).json({ error: "El CI del propietario es obligatorio para buscar", code: "OwnerNationalIdRequired" });
     }
     res.json({ pets: await petService.findByOwnerNationalId(nationalId) });
   }),
@@ -45,7 +45,7 @@ export const petController = {
     const id = Number(req.params.id);
     const { status } = req.body as { status?: "ACTIVE" | "INACTIVE" };
     if (status !== "ACTIVE" && status !== "INACTIVE") {
-      return res.status(400).json({ error: "El estado debe ser activo o inactivo" });
+      return res.status(400).json({ error: "El estado debe ser activo o inactivo", code: "InvalidRecordStatus" });
     }
     const pet = await petService.changeStatus(id, status);
     res.json({ pet });
