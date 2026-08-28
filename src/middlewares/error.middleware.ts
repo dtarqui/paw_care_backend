@@ -21,7 +21,7 @@ import {
   MedicationNotFoundError,
 } from "../services/medication.service";
 import { InvalidOwnerDataError, OwnerNotFoundError } from "../services/owner.service";
-import { InvalidPaymentError } from "../services/payment.service";
+import { InvalidPaymentError, ReceiptNotFoundError } from "../services/payment.service";
 import { DuplicatePetError, InvalidPetDataError, PetNotFoundError } from "../services/pet.service";
 import { InvalidPreventiveControlDataError } from "../services/preventiveControl.service";
 import { QrChargeNotFoundError, VisitAlreadyPaidError } from "../services/qrPayment.service";
@@ -59,6 +59,7 @@ export function errorMiddleware(err: unknown, _req: Request, res: Response, _nex
     err instanceof UserNotFoundError ||
     err instanceof OwnerNotFoundError ||
     err instanceof MedicationNotFoundError ||
+    err instanceof ReceiptNotFoundError ||
     err instanceof QrChargeNotFoundError
   ) {
     return res.status(404).json({ error: err.message, code: err.name });

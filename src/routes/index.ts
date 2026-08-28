@@ -106,6 +106,7 @@ router.put("/appointments/:id", requireAuth, appointmentController.reschedule);
 router.get("/payments/pending", requireAuth, paymentController.listPending);
 router.get("/payments/history", requireAuth, paymentController.history);
 router.post("/payments", requireAuth, paymentController.register);
+router.get("/payments/:id/receipt", requireAuth, paymentController.receipt);
 
 // Cobro por QR bancario (sesión 6) — genera un QR real vía el banco elegido para
 // "QR Simple" (ver lib/qrPayment.ts, hoy sin conectar de verdad) y lo confirma cuando

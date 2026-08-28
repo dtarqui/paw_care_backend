@@ -113,3 +113,22 @@ export function dateToTimeLiteral(date: Date): string {
   const mi = String(date.getMinutes()).padStart(2, "0");
   return `${hh}:${mi}`;
 }
+
+/**
+ * Un literal `YYYY-MM-DDTHH:mm` como lo lee una persona en el comprobante.
+ *
+ * Mismo criterio que el frontend (`lib/date.ts`): en español el `dd/mm/aaaa` de
+ * siempre; en inglés el mes abreviado, porque `03/04` significa cosas distintas
+ * según el país y en un papel que se archiva esa ambigüedad no sirve.
+ */
+export function literalToDisplay(literal: string, language: string): string {
+  const [datePart, timePart] = literal.split("T");
+  const [yyyy, mm, dd] = datePart.split("-").map(Number);
+  const english = language.startsWith("en");
+  const formatted = new Intl.DateTimeFormat(english ? "en-GB" : "es-BO", {
+    day: "2-digit",
+    month: english ? "short" : "2-digit",
+    year: "numeric",
+  }).format(new Date(yyyy, mm - 1, dd));
+  return timePart ? `${formatted} ${timePart.slice(0, 5)}` : formatted;
+}

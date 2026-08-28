@@ -62,6 +62,29 @@ const PREVENTIVE_CONTROL_TYPE: Dictionary<PreventiveControlType> = {
   en: { VACCINE: "Vaccine", DEWORMING: "Deworming" },
 };
 
+/**
+ * Los tipos de servicio se guardan en español porque son **datos** del catálogo de la
+ * clínica, no etiquetas de interfaz (ver `frontend/src/lib/service-types.ts`). Se
+ * traducen al mostrarlos, igual que en la pantalla, y si alguien cargó uno a mano que
+ * no está acá se muestra tal cual — es preferible a esconderlo.
+ */
+const SERVICE_TYPE: Record<Language, Record<string, string>> = {
+  es: {
+    "Consulta General": "Consulta General",
+    "Vacunación": "Vacunación",
+    Control: "Control",
+    "Cirugía": "Cirugía",
+    "Desparasitación": "Desparasitación",
+  },
+  en: {
+    "Consulta General": "General consultation",
+    "Vacunación": "Vaccination",
+    Control: "Check-up",
+    "Cirugía": "Surgery",
+    "Desparasitación": "Deworming",
+  },
+};
+
 /** Encabezados de columna, nombres de hoja y títulos de reporte. */
 const TEXT = {
   es: {
@@ -113,6 +136,14 @@ const TEXT = {
     reportRevenueByService: "Ingresos por tipo de servicio",
     reportVisits: "Atenciones por período",
     reportTo: "a",
+    receiptClinic: "Clínica veterinaria",
+    receiptNumber: "Comprobante N.º",
+    receiptAmountPaid: "Monto cobrado",
+    receiptReceivedFrom: "Recibimos de",
+    receiptConcept: "Concepto",
+    receiptVisitDate: "Fecha de la atención",
+    receiptFooter: "Comprobante interno de la clínica. No constituye factura fiscal.",
+    fileReceipt: "recibo",
     fileFullExport: "pawcare-exportacion-completa",
     "file-revenue-by-service": "reporte-ingresos-por-servicio",
     "file-visits": "reporte-atenciones",
@@ -166,6 +197,14 @@ const TEXT = {
     reportRevenueByService: "Revenue by service type",
     reportVisits: "Visits over a period",
     reportTo: "to",
+    receiptClinic: "Veterinary clinic",
+    receiptNumber: "Receipt no.",
+    receiptAmountPaid: "Amount paid",
+    receiptReceivedFrom: "Received from",
+    receiptConcept: "For",
+    receiptVisitDate: "Visit date",
+    receiptFooter: "Internal clinic receipt. Not a tax invoice.",
+    fileReceipt: "receipt",
     fileFullExport: "pawcare-full-export",
     "file-revenue-by-service": "report-revenue-by-service",
     "file-visits": "report-visits",
@@ -198,6 +237,7 @@ export function labelsFor(language: Language) {
     paymentMethod: (v: PaymentMethod | null | undefined) => translate(PAYMENT_METHOD, language, v),
     preventiveControlType: (v: PreventiveControlType | null | undefined) =>
       translate(PREVENTIVE_CONTROL_TYPE, language, v),
+    serviceType: (v: string | null | undefined) => (v ? SERVICE_TYPE[language][v] ?? v : "—"),
     text: (key: TextKey) => TEXT[language][key],
   };
 }

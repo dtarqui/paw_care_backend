@@ -54,16 +54,40 @@ describe("paymentService.register", () => {
       visitId: 10,
       method: "CASH",
       amount: 120,
-      date: new Date(),
+      date: new Date("2026-08-27T10:30:00"),
       createdAt: new Date(),
+      // El alta trae las relaciones porque el comprobante se arma en la misma consulta.
+      visit: {
+        id: 10,
+        serviceType: "Consulta General",
+        diagnosis: "Control de rutina",
+        date: new Date("2026-08-27T10:00:00"),
+        pet: {
+          id: 3,
+          name: "Luna",
+          species: "Perro",
+          owner: {
+            id: 2,
+            firstName: "Roberto",
+            paternalLastName: "Vargas",
+            nationalId: "5551001",
+            phone: "70011122",
+          },
+        },
+        vet: { user: { firstName: "Patricia", paternalLastName: "Mendoza" } },
+      },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
-    const payment = await paymentService.register(10, "CASH", 120);
+    const receipt = await paymentService.register(10, "CASH", 120);
 
     expect(prismaMock.medicalVisit.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 10 }, data: { paymentStatus: "PAID" } })
     );
-    expect(payment.visitId).toBe(10);
+    expect(receipt.visit.id).toBe(10);
+    // El número que se le entrega al cliente sale del id del pago, no de un contador.
+    expect(receipt.receiptNumber).toBe("R-2026-000001");
+    expect(receipt.pet.name).toBe("Luna");
+    expect(receipt.owner.phone).toBe("70011122");
   });
 });

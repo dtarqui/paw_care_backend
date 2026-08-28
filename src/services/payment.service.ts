@@ -1,6 +1,13 @@
 import { medicalVisitRepository } from "../repositories/medicalVisit.repository";
 import { paymentRepository } from "../repositories/payment.repository";
-import { PaymentMethod } from "../types";
+import { PaymentMethod, PaymentReceipt } from "../types";
+
+export class ReceiptNotFoundError extends Error {
+  constructor() {
+    super("El comprobante solicitado no existe");
+    this.name = "ReceiptNotFoundError";
+  }
+}
 
 export class InvalidPaymentError extends Error {
   constructor(message: string) {
@@ -28,6 +35,14 @@ export const paymentService = {
     }
 
     await medicalVisitRepository.markAsPaid(visitId);
+    // Devuelve el comprobante completo, no solo el pago: la pantalla de éxito lo
+    // muestra al instante y arma el mensaje de WhatsApp sin otra vuelta al servidor.
     return paymentRepository.register({ visitId, method, amount });
+  },
+
+  async receipt(id: number): Promise<PaymentReceipt> {
+    const receipt = await paymentRepository.findReceipt(id);
+    if (!receipt) throw new ReceiptNotFoundError();
+    return receipt;
   },
 };

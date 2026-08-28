@@ -54,7 +54,8 @@ export const reportController = {
         { header: t("quantity"), key: "count", width: 12 },
         { header: t("amountBs"), key: "amount", width: 15 },
       ];
-      sheet.addRows(await reportService.revenueByServiceType(filters));
+      const groups = await reportService.revenueByServiceType(filters);
+      sheet.addRows(groups.map((g) => ({ ...g, serviceType: label.serviceType(g.serviceType) })));
     } else {
       sheet.columns = [
         { header: t("date"), key: "date", width: 22 },
@@ -66,7 +67,13 @@ export const reportController = {
       ];
       const visits = await reportService.visitsByPeriod(filters);
       // El estado viaja en inglés (PENDING/PAID); en la planilla se lee en español.
-      sheet.addRows(visits.map((v) => ({ ...v, paymentStatus: label.visitPaymentStatus(v.paymentStatus) })));
+      sheet.addRows(
+        visits.map((v) => ({
+          ...v,
+          serviceType: label.serviceType(v.serviceType),
+          paymentStatus: label.visitPaymentStatus(v.paymentStatus),
+        }))
+      );
     }
     sheet.getRow(1).font = { bold: true };
 
@@ -108,7 +115,7 @@ export const reportController = {
       drawTable(
         doc,
         [t("serviceType"), t("quantity"), t("amountBs")],
-        groups.map((g) => [g.serviceType, String(g.count), g.amount.toFixed(2)])
+        groups.map((g) => [label.serviceType(g.serviceType), String(g.count), g.amount.toFixed(2)])
       );
     } else {
       const visits = await reportService.visitsByPeriod(filters);
@@ -118,7 +125,7 @@ export const reportController = {
         visits.map((v) => [
           v.date.slice(0, 10),
           v.pet,
-          v.serviceType,
+          label.serviceType(v.serviceType),
           v.consultationFee.toFixed(2),
           label.visitPaymentStatus(v.paymentStatus),
         ])

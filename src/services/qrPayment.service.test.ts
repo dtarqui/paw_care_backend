@@ -112,6 +112,15 @@ describe("qrPaymentService.confirmByExternalReference", () => {
       amount: 120,
       date: new Date(),
       createdAt: new Date(),
+      // El alta de pago devuelve el comprobante, así que trae las relaciones.
+      visit: {
+        id: 10,
+        serviceType: "Consulta General",
+        diagnosis: "Control",
+        date: new Date(),
+        pet: { id: 3, name: "Luna", species: "Perro", owner: { id: 2, firstName: "Roberto", paternalLastName: "Vargas", nationalId: "5551001", phone: null } },
+        vet: { user: { firstName: "Patricia", paternalLastName: "Mendoza" } },
+      },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 

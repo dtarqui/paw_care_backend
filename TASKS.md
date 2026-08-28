@@ -194,6 +194,20 @@ Se perdieron todas las tablas `st_*` —recuperadas con `prisma db seed`, porque
 
 ---
 
+## Correcciones y mejoras (sesión 17 — comprobante de pago)
+
+`docs/MEJORAS_PRODUCTO.md` 1.2: al cobrar no se generaba ningún documento para el cliente.
+
+- [x] **`POST /api/payments` devuelve el comprobante completo** (`PaymentReceipt`: número, monto, método, mascota, propietario con teléfono, atención y veterinario) en vez de solo el pago. La pantalla de éxito se dibuja sin una segunda vuelta al servidor, y con eso arma también el mensaje de WhatsApp.
+- [x] **El número sale del id del pago** (`utils/receiptNumber.ts` → `R-2026-000042`), no de un contador propio. Un contador tiene que leer cuántos hay antes de escribir, y dos cobros simultáneos en el mostrador pueden imprimir el mismo número en dos papeles distintos.
+- [x] **`paymentRepository.register` mete el `include` en el mismo `create`**: devuelve el comprobante armado, sin una segunda consulta que pueda no encontrar lo que se acaba de crear.
+- [x] **`GET /api/payments/:id/receipt`** genera el PDF con `pdfkit` (`lib/receiptPdf.ts`), traducido con `labelsFor(readLanguage(req))` igual que los reportes — encabezados, método de pago, fechas y hasta el nombre del archivo. Media hoja A4: es un recibo, no un informe.
+- [x] **`label.serviceType()` nuevo** en `utils/labels.ts`: el tipo de servicio se guarda en español porque es dato del catálogo, y ahora se traduce al escribirlo en el comprobante **y en los reportes Excel/PDF**, que hasta acá lo sacaban crudo.
+- [x] **Fechas legibles en los documentos** (`literalToDisplay`): `dd/mm/aaaa` en español, mes abreviado en inglés — en un papel que se archiva, `03/04` es ambiguo.
+- [x] Tests actualizados (el alta de pago ahora devuelve el comprobante) y uno nuevo que fija el formato del número. 29 en verde.
+
+---
+
 ## Tarea 00 — Setup del backend
 
 **Depende de:** nada (primera tarea).

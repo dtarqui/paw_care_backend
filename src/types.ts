@@ -143,6 +143,23 @@ export interface PaymentHistoryEntry {
   date: string;
 }
 
+/**
+ * Todo lo que lleva el comprobante que se le entrega al cliente. Se arma de una sola
+ * consulta al registrar el pago, así la pantalla de éxito no necesita ir y volver.
+ */
+export interface PaymentReceipt {
+  id: number;
+  /** Número visible del comprobante, ej. `RECIBO-2026-000042`. */
+  receiptNumber: string;
+  date: string;
+  method: PaymentMethod;
+  amount: number;
+  pet: Pick<Pet, "id" | "name" | "species">;
+  owner: Pick<Owner, "id" | "firstName" | "paternalLastName" | "nationalId"> & { phone?: string };
+  visit: { id: number; serviceType: string; diagnosis: string; date: string };
+  vet: { firstName: string; paternalLastName: string };
+}
+
 export type QrChargeStatus = "PENDING" | "CONFIRMED" | "EXPIRED" | "ERROR";
 
 export interface QrCharge {
