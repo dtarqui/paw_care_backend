@@ -15,6 +15,7 @@ import { InvalidImportDataError } from "../services/import.service";
 import { InvalidVisitDataError } from "../services/medicalVisit.service";
 import {
   DuplicateMedicationError,
+  ExpiredBatchError,
   InsufficientStockError,
   InvalidMedicationDataError,
   MedicationHasMovesError,
@@ -78,6 +79,7 @@ export function errorMiddleware(err: unknown, _req: Request, res: Response, _nex
     err instanceof InvalidVisitDataError ||
     err instanceof InvalidPreventiveControlDataError ||
     err instanceof InvalidMedicationDataError ||
+    err instanceof ExpiredBatchError ||
     err instanceof InvalidImportDataError ||
     err instanceof InvalidOwnerDataError ||
     err instanceof InvalidScheduleDataError ||

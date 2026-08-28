@@ -126,6 +126,8 @@ router.post("/preventive-controls", requireAuth, preventiveControlController.cre
 // Inventario de Medicamentos (HU9 · P11) — solo Administrador
 router.get("/medications", requireAuth, requireRole("ADMIN"), medicationController.list);
 router.get("/medications/low-stock", requireAuth, requireRole("ADMIN"), medicationController.lowStock);
+router.get("/medications/expiring", requireAuth, requireRole("ADMIN"), medicationController.expiring);
+router.get("/medications/:id/batches", requireAuth, requireRole("ADMIN"), medicationController.batches);
 router.post("/medications", requireAuth, requireRole("ADMIN"), medicationController.create);
 router.patch("/medications/:id", requireAuth, requireRole("ADMIN"), medicationController.update);
 router.delete("/medications/:id", requireAuth, requireRole("ADMIN"), medicationController.remove);

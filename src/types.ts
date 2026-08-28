@@ -1,5 +1,5 @@
 // Tipos de transporte de la API (lo que viaja en el JSON hacia el frontend).
-// Reflejan el modelo de datos real documentado en database/MODELO_DATOS.md.
+// Reflejan el modelo de datos real documentado en docs/MODELO_DATOS.md.
 //
 // Convención del proyecto: identificadores en INGLÉS, textos visibles en ESPAÑOL
 // (esos viven en la UI del frontend y en los mensajes de error de los servicios).
@@ -239,8 +239,33 @@ export interface VaccinationCard {
 export interface Medication {
   id: number;
   name: string;
+  /** Lo que hay en el estante, vencido incluido. */
   currentStock: number;
+  /** Lo que se puede usar: el total menos los lotes vencidos. Es contra este número
+   * que se compara el stock mínimo y se verifica la disponibilidad, porque una caja
+   * vencida ocupa lugar pero no sirve para atender. */
+  availableStock: number;
+  expiredStock: number;
   minimumStock: number;
+  /** El lote no vencido que vence antes, si alguno tiene fecha. */
+  nextExpiryOn?: string;
+}
+
+export interface MedicationBatch {
+  id: number;
+  medicationId: number;
+  batchNumber?: string;
+  expiresOn?: string;
+  quantity: number;
+  receivedOn: string;
+  expired: boolean;
+}
+
+/** Un lote que ya venció o está por vencer, con su medicamento, para la alerta. */
+export interface ExpiringBatch extends MedicationBatch {
+  medicationName: string;
+  /** Días que faltan para vencer; negativo si ya venció. */
+  daysToExpiry: number;
 }
 
 export type InventoryMoveType = "IN" | "OUT";

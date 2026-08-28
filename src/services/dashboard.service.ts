@@ -23,7 +23,7 @@ export interface DashboardModule {
   tabs?: string[];
 }
 
-// Coincide con el mapa de navegación por rol de frontend/PANTALLAS.md (sección 1).
+// Coincide con el mapa de navegación por rol de docs/PANTALLAS.md (sección 1).
 // Los textos van en español a propósito: son lo que se muestra en el sidebar y el
 // dashboard. Los identificadores y rutas van en inglés, como el resto del código.
 const MODULES_BY_ROLE: Record<Role, DashboardModule[]> = {

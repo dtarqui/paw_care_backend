@@ -99,7 +99,7 @@ export const userService = {
       role: input.role,
     });
 
-    // Espejo del modelo real: Vet.userId 1-a-1 con User (database/MODELO_DATOS.md).
+    // Espejo del modelo real: Vet.userId 1-a-1 con User (docs/MODELO_DATOS.md).
     if (input.role === "VET") {
       await vetRepository.create({
         userId: newUser.id,

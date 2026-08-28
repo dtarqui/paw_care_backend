@@ -210,7 +210,10 @@ export async function generateFullExport(language: Language): Promise<ExcelJS.Wo
     [
       { header: t("name"), key: "name", width: 30 },
       { header: t("currentStock"), key: "currentStock", width: 14 },
+      { header: t("availableStock"), key: "availableStock", width: 14 },
+      { header: t("expiredStock"), key: "expiredStock", width: 12 },
       { header: t("minimumStock"), key: "minimumStock", width: 14 },
+      { header: t("nextExpiry"), key: "nextExpiryOn", width: 18 },
     ],
     medications
   );

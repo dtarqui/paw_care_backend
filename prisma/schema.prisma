@@ -7,7 +7,7 @@
 //   - Toda tabla física lleva el prefijo `st_` y va en snake_case plural, vía @@map.
 //     Los nombres de columna quedan en camelCase (igual que el campo del modelo).
 //
-// database/MODELO_DATOS.md documenta el porqué de cada decisión de modelado.
+// docs/MODELO_DATOS.md documenta el porqué de cada decisión de modelado.
 
 generator client {
   provider      = "prisma-client-js"
@@ -295,14 +295,41 @@ model PreventiveControl {
 model Medication {
   id           Int      @id @default(autoincrement())
   name         String   @unique @db.VarChar(100)
-  currentStock Int      @default(0)
+  // El stock ya no vive acá: es la suma de los lotes. Tener además un total
+  // denormalizado obliga a mantener dos números en sincronía, y el día que se
+  // desincronizan no hay forma de saber cuál de los dos miente.
   minimumStock Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  moves InventoryMove[]
+  batches MedicationBatch[]
+  moves   InventoryMove[]
 
   @@map("st_medications")
+}
+
+/// Un lote que entró al inventario: lo que dice la caja. `quantity` es lo que queda
+/// de ese lote, así que el stock de un medicamento es la suma de sus lotes.
+///
+/// Número de lote y vencimiento son opcionales a propósito: hay insumos sin fecha, y
+/// exigirla llevaría a inventar una o a no registrar la entrada. Lo que no tiene fecha
+/// simplemente no entra en las alertas de vencimiento.
+model MedicationBatch {
+  id           Int        @id @default(autoincrement())
+  medicationId Int
+  medication   Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  batchNumber  String?    @db.VarChar(40)
+  expiresOn    DateTime?  @db.Date
+  quantity     Int
+  receivedOn   DateTime   @db.Date
+  createdAt    DateTime   @default(now())
+
+  moves InventoryMove[]
+
+  // Los lotes se consumen por vencimiento más próximo primero, que es justo el orden
+  // de este índice.
+  @@index([medicationId, expiresOn])
+  @@map("st_medication_batches")
 }
 
 model InventoryMove {
@@ -314,9 +341,15 @@ model InventoryMove {
   date         DateTime          @default(now())
   visitId      Int?
   visit        MedicalVisit?     @relation(fields: [visitId], references: [id], onDelete: SetNull)
+  // De qué lote salió (o a cuál entró). Nulo en los movimientos anteriores a los
+  // lotes. Una salida que toma unidades de dos lotes deja dos movimientos, uno por
+  // lote: es la única forma de poder decir después qué lote recibió un paciente.
+  batchId      Int?
+  batch        MedicationBatch?  @relation(fields: [batchId], references: [id], onDelete: SetNull)
 
   @@index([medicationId, date])
   @@index([visitId])
+  @@index([batchId])
   @@map("st_inventory_moves")
 }
 

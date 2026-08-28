@@ -158,21 +158,45 @@ async function main() {
     ],
   });
 
-  // --- Medicamentos (tres quedan bajo el mínimo a propósito, para HU9) ------
-  await prisma.medication.createMany({
-    data: [
-      { name: "Amoxicilina 500mg", currentStock: 45, minimumStock: 10 },
-      { name: "Meloxicam (antiinflamatorio)", currentStock: 5, minimumStock: 8 },
-      { name: "Shampoo medicado dermatológico", currentStock: 18, minimumStock: 5 },
-      { name: "Vacuna antirrábica", currentStock: 25, minimumStock: 10 },
-      { name: "Desparasitante interno (tableta)", currentStock: 4, minimumStock: 10 },
-      { name: "Vacuna múltiple (moquillo/parvo)", currentStock: 30, minimumStock: 10 },
-      { name: "Suero fisiológico", currentStock: 50, minimumStock: 15 },
-      { name: "Antipulgas tópico", currentStock: 6, minimumStock: 10 },
-      { name: "Multivitamínico", currentStock: 20, minimumStock: 5 },
-      { name: "Anestésico local", currentStock: 12, minimumStock: 5 },
-    ],
-  });
+  // --- Medicamentos y sus lotes ---------------------------------------------
+  // Tres quedan bajo el mínimo a propósito (HU9) y los vencimientos cubren los tres
+  // casos que la pantalla tiene que saber mostrar: un lote ya vencido, uno que vence
+  // dentro del mes, y lotes sanos. La amoxicilina llega en dos lotes distintos, que
+  // es lo que hace visible el consumo por vencimiento más próximo primero.
+  const medicamentos: { name: string; minimumStock: number; lotes: [number, number | null, string | null][] }[] = [
+    // [cantidad, días hasta el vencimiento (null = sin fecha), número de lote]
+    { name: "Amoxicilina 500mg", minimumStock: 10, lotes: [[15, 45, "AMX-2451"], [30, 400, "AMX-2680"]] },
+    { name: "Meloxicam (antiinflamatorio)", minimumStock: 8, lotes: [[5, 210, "MLX-118"]] },
+    { name: "Shampoo medicado dermatológico", minimumStock: 5, lotes: [[18, null, null]] },
+    { name: "Vacuna antirrábica", minimumStock: 10, lotes: [[25, 300, "RAB-7702"]] },
+    { name: "Desparasitante interno (tableta)", minimumStock: 10, lotes: [[4, 150, "DES-330"]] },
+    { name: "Vacuna múltiple (moquillo/parvo)", minimumStock: 10, lotes: [[30, 240, "MUL-9021"]] },
+    { name: "Suero fisiológico", minimumStock: 15, lotes: [[50, 500, "SUE-1200"]] },
+    { name: "Antipulgas tópico", minimumStock: 10, lotes: [[6, 20, "APT-455"]] },
+    { name: "Multivitamínico", minimumStock: 5, lotes: [[20, 90, "MVT-604"]] },
+    // Este ya venció: es el caso que la clínica tiene que ver y retirar del estante.
+    { name: "Anestésico local", minimumStock: 5, lotes: [[12, -12, "ANE-088"]] },
+  ];
+
+  for (const medicamento of medicamentos) {
+    const creado = await prisma.medication.create({
+      data: { name: medicamento.name, minimumStock: medicamento.minimumStock },
+    });
+    for (const [cantidad, dias, lote] of medicamento.lotes) {
+      const batch = await prisma.medicationBatch.create({
+        data: {
+          medicationId: creado.id,
+          quantity: cantidad,
+          batchNumber: lote,
+          expiresOn: dias === null ? null : literalDateOnlyToDate(addDays(today, dias)),
+          receivedOn: literalDateOnlyToDate(addDays(today, -30)),
+        },
+      });
+      await prisma.inventoryMove.create({
+        data: { medicationId: creado.id, batchId: batch.id, type: "IN", quantity: cantidad },
+      });
+    }
+  }
 
   // --- Atenciones médicas (variedad de fechas/serviceType/peso para HU7/HU8
   // y para la ficha de mascota — Luna y Max acumulan varios registros de peso

@@ -1,5 +1,5 @@
 // Punto de conexión con el banco elegido para generar cobros por QR (riel "QR Simple"
-// interoperable de Bolivia — ver database/MODELO_DATOS.md y docs/COMPARATIVA_MERCADO_VETERINARIO.md).
+// interoperable de Bolivia — ver docs/MODELO_DATOS.md y docs/COMPARATIVA_MERCADO_VETERINARIO.md).
 // A diferencia de lib/mailer.ts (SMTP es un protocolo estándar, cualquier proveedor
 // funciona igual), cada banco boliviano expone su propia API propietaria sin
 // documentación técnica pública — no hay forma honesta de escribir la llamada HTTP

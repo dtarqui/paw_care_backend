@@ -13,21 +13,43 @@ export const medicationController = {
 
   registerStockIn: asyncHandler(async (req: Request, res: Response) => {
     const id = Number(req.params.id);
-    const { quantity } = req.body as { quantity?: number };
-    const medication = await medicationService.registerStockIn(id, Number(quantity));
+    const { quantity, batchNumber, expiresOn } = req.body as {
+      quantity?: number;
+      batchNumber?: string;
+      expiresOn?: string;
+    };
+    const medication = await medicationService.registerStockIn(id, Number(quantity), {
+      batchNumber,
+      expiresOn,
+    });
     res.status(201).json({ medication });
   }),
 
+  batches: asyncHandler(async (req: Request, res: Response) => {
+    res.json({ batches: await medicationService.batches(Number(req.params.id)) });
+  }),
+
+  /** Lo vencido y lo que vence pronto. 60 días por defecto: es el horizonte con el
+   * que todavía se alcanza a usar la caja o a devolverla al proveedor. */
+  expiring: asyncHandler(async (req: Request, res: Response) => {
+    const days = Number(req.query.days) || 60;
+    res.json({ batches: await medicationService.expiring(days) });
+  }),
+
   create: asyncHandler(async (req: Request, res: Response) => {
-    const { name, minimumStock, initialStock } = req.body as {
+    const { name, minimumStock, initialStock, batchNumber, expiresOn } = req.body as {
       name?: string;
       minimumStock?: number;
       initialStock?: number;
+      batchNumber?: string;
+      expiresOn?: string;
     };
     const medication = await medicationService.create({
       name: name ?? "",
       minimumStock: Number(minimumStock),
       initialStock: initialStock ? Number(initialStock) : undefined,
+      batchNumber,
+      expiresOn,
     });
     res.status(201).json({ medication });
   }),
