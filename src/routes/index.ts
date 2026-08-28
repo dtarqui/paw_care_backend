@@ -118,6 +118,8 @@ router.post("/payments/qr/webhook", qrPaymentController.webhook);
 
 // Control Preventivo (HU6 · P08)
 router.get("/pets/:id/preventive-controls", requireAuth, preventiveControlController.history);
+// Carnet de vacunación de la mascota, en PDF (MEJORAS_PRODUCTO.md 1.3).
+router.get("/pets/:id/vaccination-card", requireAuth, preventiveControlController.vaccinationCard);
 router.get("/preventive-controls/upcoming", requireAuth, preventiveControlController.upcoming);
 router.post("/preventive-controls", requireAuth, preventiveControlController.create);
 

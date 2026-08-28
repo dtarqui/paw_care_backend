@@ -4,6 +4,7 @@ import { paymentService } from "../services/payment.service";
 import { PaymentMethod } from "../types";
 import { asyncHandler } from "../utils/asyncHandler";
 import { labelsFor, readLanguage } from "../utils/labels";
+import { readPaperSize } from "../utils/paperSize";
 
 export const paymentController = {
   listPending: asyncHandler(async (_req: Request, res: Response) => {
@@ -43,7 +44,7 @@ export const paymentController = {
       `attachment; filename="${label.text("fileReceipt")}-${receipt.receiptNumber.replace(/^R-/, "")}.pdf"`
     );
 
-    const doc = buildReceiptPdf(receipt, label, language);
+    const doc = buildReceiptPdf(receipt, label, language, readPaperSize(req));
     doc.pipe(res);
     doc.end();
   }),

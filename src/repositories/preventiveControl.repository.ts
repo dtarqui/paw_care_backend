@@ -1,6 +1,6 @@
 import { prisma } from "../lib/prisma";
-import { PreventiveControlType } from "../types";
-import { dateOnlyToLiteral, literalDateOnlyToDate } from "../utils/date";
+import { PreventiveControlType, VaccinationCard } from "../types";
+import { dateOnlyToLiteral, literalDateOnlyToDate, todayISO } from "../utils/date";
 
 export interface PreventiveControlRecord {
   id: number;
@@ -43,6 +43,48 @@ export const preventiveControlRepository = {
   async findById(id: number): Promise<PreventiveControlRecord | undefined> {
     const row = await prisma.preventiveControl.findUnique({ where: { id } });
     return row ? toDomain(row) : undefined;
+  },
+
+  /** Los datos del carnet: mascota + propietario + todos sus controles, en una sola
+   * consulta. Devuelve null si la mascota no existe. */
+  async findVaccinationCard(petId: number): Promise<VaccinationCard | null> {
+    const pet = await prisma.pet.findUnique({
+      where: { id: petId },
+      include: {
+        owner: true,
+        preventiveControls: { orderBy: { appliedOn: "asc" } },
+      },
+    });
+    if (!pet) return null;
+
+    const today = todayISO();
+    return {
+      pet: {
+        id: pet.id,
+        name: pet.name,
+        species: pet.species,
+        breed: pet.breed ?? "",
+        sex: (pet.sex ?? "") as VaccinationCard["pet"]["sex"],
+        birthDate: pet.birthDate ? dateOnlyToLiteral(pet.birthDate) : "",
+      },
+      owner: {
+        firstName: pet.owner.firstName,
+        paternalLastName: pet.owner.paternalLastName,
+        nationalId: pet.owner.nationalId,
+        phone: pet.owner.phone ?? undefined,
+      },
+      controls: pet.preventiveControls.map((control) => {
+        const nextDoseOn = control.nextDoseOn ? dateOnlyToLiteral(control.nextDoseOn) : "";
+        return {
+          type: control.type,
+          appliedOn: dateOnlyToLiteral(control.appliedOn),
+          nextDoseOn,
+          // Sin próxima dosis no hay nada que vencer: se deja en falso, igual que en
+          // el panel de "próximos a vencer".
+          overdue: nextDoseOn !== "" && nextDoseOn < today,
+        };
+      }),
+    };
   },
 
   async create(input: NewPreventiveControlRecord): Promise<PreventiveControlRecord> {

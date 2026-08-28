@@ -85,6 +85,18 @@ const SERVICE_TYPE: Record<Language, Record<string, string>> = {
   },
 };
 
+/** Especie y sexo también son datos en español (los teclea la clínica), así que se
+ * traducen al mostrarlos y caen al valor crudo si no están en la lista. */
+const SPECIES: Record<Language, Record<string, string>> = {
+  es: { Perro: "Perro", Gato: "Gato", Otro: "Otro" },
+  en: { Perro: "Dog", Gato: "Cat", Otro: "Other" },
+};
+
+const SEX: Record<Language, Record<string, string>> = {
+  es: { Macho: "Macho", Hembra: "Hembra" },
+  en: { Macho: "Male", Hembra: "Female" },
+};
+
 /** Encabezados de columna, nombres de hoja y títulos de reporte. */
 const TEXT = {
   es: {
@@ -143,6 +155,15 @@ const TEXT = {
     receiptConcept: "Concepto",
     receiptVisitDate: "Fecha de la atención",
     receiptFooter: "Comprobante interno de la clínica. No constituye factura fiscal.",
+    cardTitle: "Carnet de vacunación y desparasitación",
+    cardBirthDate: "Fecha de nacimiento",
+    cardHistory: "Historial de dosis",
+    cardApplied: "Aplicada",
+    cardNextDose: "Próxima dosis",
+    cardOverdue: "Vencida",
+    cardEmpty: "Todavía no hay dosis registradas para esta mascota.",
+    cardFooter: "Emitido por PawCare el",
+    fileCard: "carnet",
     fileReceipt: "recibo",
     fileFullExport: "pawcare-exportacion-completa",
     "file-revenue-by-service": "reporte-ingresos-por-servicio",
@@ -204,6 +225,15 @@ const TEXT = {
     receiptConcept: "For",
     receiptVisitDate: "Visit date",
     receiptFooter: "Internal clinic receipt. Not a tax invoice.",
+    cardTitle: "Vaccination and deworming card",
+    cardBirthDate: "Date of birth",
+    cardHistory: "Dose history",
+    cardApplied: "Given",
+    cardNextDose: "Next dose",
+    cardOverdue: "Overdue",
+    cardEmpty: "No doses recorded for this pet yet.",
+    cardFooter: "Issued by PawCare on",
+    fileCard: "vaccination-card",
     fileReceipt: "receipt",
     fileFullExport: "pawcare-full-export",
     "file-revenue-by-service": "report-revenue-by-service",
@@ -238,6 +268,8 @@ export function labelsFor(language: Language) {
     preventiveControlType: (v: PreventiveControlType | null | undefined) =>
       translate(PREVENTIVE_CONTROL_TYPE, language, v),
     serviceType: (v: string | null | undefined) => (v ? SERVICE_TYPE[language][v] ?? v : "—"),
+    speciesOrRaw: (v: string | null | undefined) => (v ? SPECIES[language][v] ?? v : ""),
+    sexOrRaw: (v: string | null | undefined) => (v ? SEX[language][v] ?? v : ""),
     text: (key: TextKey) => TEXT[language][key],
   };
 }

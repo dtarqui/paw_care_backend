@@ -6,6 +6,13 @@ import {
 import { PreventiveControl, PreventiveControlType } from "../types";
 import { addDays, todayISO } from "../utils/date";
 
+export class VaccinationCardNotFoundError extends Error {
+  constructor() {
+    super("La mascota solicitada no existe");
+    this.name = "VaccinationCardNotFoundError";
+  }
+}
+
 export class InvalidPreventiveControlDataError extends Error {
   constructor(message: string) {
     super(message);
@@ -36,6 +43,13 @@ async function hydrate(record: PreventiveControlRecord): Promise<PreventiveContr
 }
 
 export const preventiveControlService = {
+  /** El carnet de una mascota, listo para imprimir. */
+  async vaccinationCard(petId: number) {
+    const card = await preventiveControlRepository.findVaccinationCard(petId);
+    if (!card) throw new VaccinationCardNotFoundError();
+    return card;
+  },
+
   async petHistory(petId: number): Promise<PreventiveControl[]> {
     if (!(await petRepository.findById(petId))) {
       throw new InvalidPreventiveControlDataError("La mascota no existe");

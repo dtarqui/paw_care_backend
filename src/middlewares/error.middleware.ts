@@ -23,7 +23,10 @@ import {
 import { InvalidOwnerDataError, OwnerNotFoundError } from "../services/owner.service";
 import { InvalidPaymentError, ReceiptNotFoundError } from "../services/payment.service";
 import { DuplicatePetError, InvalidPetDataError, PetNotFoundError } from "../services/pet.service";
-import { InvalidPreventiveControlDataError } from "../services/preventiveControl.service";
+import {
+  InvalidPreventiveControlDataError,
+  VaccinationCardNotFoundError,
+} from "../services/preventiveControl.service";
 import { QrChargeNotFoundError, VisitAlreadyPaidError } from "../services/qrPayment.service";
 import { ReminderNotFoundError } from "../services/reminder.service";
 import { ForeignScheduleError } from "../services/schedule.errors";
@@ -60,6 +63,7 @@ export function errorMiddleware(err: unknown, _req: Request, res: Response, _nex
     err instanceof OwnerNotFoundError ||
     err instanceof MedicationNotFoundError ||
     err instanceof ReceiptNotFoundError ||
+    err instanceof VaccinationCardNotFoundError ||
     err instanceof QrChargeNotFoundError
   ) {
     return res.status(404).json({ error: err.message, code: err.name });

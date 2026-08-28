@@ -105,6 +105,7 @@ export const paymentRepository = {
     });
     return rows.map((row) => ({
       id: row.id,
+      receiptNumber: receiptNumber(row.id, dateToLiteral(row.date)),
       visitId: row.visitId,
       pet: { id: row.visit.pet.id, name: row.visit.pet.name },
       owner: {

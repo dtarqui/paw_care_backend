@@ -27,7 +27,17 @@ export function createApp() {
     .map((url) => url.trim())
     .filter(Boolean);
   const allowedOrigins = ["http://localhost:5173", ...frontendUrls];
-  app.use(cors({ origin: frontendUrls.length > 0 ? allowedOrigins : true }));
+  app.use(
+    cors({
+      origin: frontendUrls.length > 0 ? allowedOrigins : true,
+      // El frontend vive en otro origen (otro proyecto de Vercel), y por defecto el
+      // navegador solo le deja leer un puñado de headers. Sin exponer este, todas las
+      // descargas —comprobantes, carnets, reportes, exportaciones— llegaban con el
+      // nombre de respaldo que arma el frontend en vez del que manda el backend, que
+      // es el que está traducido según Accept-Language.
+      exposedHeaders: ["Content-Disposition"],
+    })
+  );
 
   app.use(express.json());
   app.use("/api", delayMiddleware, router);

@@ -208,6 +208,26 @@ Se perdieron todas las tablas `st_*` —recuperadas con `prisma db seed`, porque
 
 ---
 
+## Correcciones y mejoras (sesión 18 — carnet de vacunación y tamaño de hoja configurable)
+
+`docs/MEJORAS_PRODUCTO.md` 1.3, más el ajuste de papel que pidió la misma sesión para el carnet **y** para el comprobante de la 17.
+
+- [x] **`GET /api/pets/:id/vaccination-card`** (`lib/vaccinationCardPdf.ts`): identidad de la mascota (especie · raza · sexo, nacimiento), propietario con CI y teléfono, y el historial completo de dosis **en orden cronológico** — el carnet se lee como una libreta, de lo viejo a lo nuevo, al revés que las listas de la app. Las dosis vencidas salen en rojo con la palabra «Vencida»: el papel se mira de lejos y en un solo golpe de vista.
+- [x] **`preventiveControlRepository.findVaccinationCard`** arma el carnet en una consulta, y `vaccinationCardNotFound` distingue «no existe la mascota» de «existe y no tiene dosis» — lo segundo imprime igual, con el aviso «Sin dosis registradas», porque un carnet vacío es un carnet válido recién abierto.
+- [x] **`utils/paperSize.ts`**: media carta (por defecto), carta, A4 y rollo térmico de 80 mm, en puntos PostScript. Llega como `?paper=` y **se valida**; cualquier valor desconocido cae al tamaño por defecto en vez de romper la descarga.
+- [x] **`lib/pdfPaper.ts` mide antes de imprimir.** El rollo térmico es papel continuo: no tiene alto de hoja. En vez de fijar una altura a ojo —que deja salir medio metro de papel en blanco, o corta el documento— se dibuja una vez en un lienzo alto, se lee dónde terminó el contenido y recién ahí se crea el documento definitivo con ese alto exacto. Los dos PDF pasan por el mismo envoltorio.
+- [x] **El comprobante de pago se reacomoda igual**: en papel angosto el número deja de ir a la derecha y se apila bajo la marca, y todas las tipografías bajan de tamaño. Un diseño de dos columnas a 80 mm no se ve mal, se ve ilegible.
+- [x] Etiquetas del carnet en `utils/labels.ts` (`cardTitle`, `cardHistory`, `cardOverdue`, `fileCard`, …) y `speciesOrRaw`/`sexOrRaw` para los datos que la clínica escribe a mano en español y no siempre coinciden con el catálogo.
+- [x] **`scripts/previewPdfs.ts`**: genera los dos documentos en los cuatro tamaños y los dos idiomas con datos inventados, sin tocar la base. Un carnet de una sola dosis se ve bien siempre; el caso que hay que mirar es el de siete dosis con vencidas en el medio.
+
+**Encontrado al verificar el nombre del archivo descargado:** ninguna descarga llegaba con el nombre que manda el backend. El frontend vive en otro origen, y el navegador solo deja leer un puñado de headers salvo que el servidor los exponga — `Content-Disposition` no estaba en la lista, así que `api-client.ts` caía siempre a su nombre de respaldo (en español, aunque la app estuviera en inglés). Un `exposedHeaders: ["Content-Disposition"]` en el `cors()` de `app.ts` lo arregla **para todas las descargas**, no solo las de esta sesión: comprobantes, carnets, reportes y la exportación completa. Verificado con la app en inglés: el carnet baja como `vaccination-card-Luna.pdf`, antes `carnet-Luna.pdf`.
+
+- [x] **`PaymentHistoryEntry` ahora trae `receiptNumber`.** La fila de «Últimos pagos» fabricaba `R-55` para nombrar el archivo — un número que no existe en ningún comprobante. El formato vive en `utils/receiptNumber.ts` y debe salir de ahí una sola vez, no reimplementarse en el frontend.
+
+**Verificado**, no asumido: los ocho PDF abiertos y leídos uno por uno, el `Content-Disposition` traducido (`carnet-Luna.pdf` / `vaccination-card-Luna.pdf`), 404 con una mascota inexistente, y el alto del ticket terminando junto al contenido. 29 tests en verde.
+
+---
+
 ## Tarea 00 — Setup del backend
 
 **Depende de:** nada (primera tarea).

@@ -135,6 +135,8 @@ export type VisitPaymentStatus = "PENDING" | "PAID";
 
 export interface PaymentHistoryEntry {
   id: number;
+  /** El mismo número que lleva impreso el comprobante, ej. `R-2026-000042`. */
+  receiptNumber: string;
   visitId: number;
   pet: Pick<Pet, "id" | "name">;
   owner: Pick<Owner, "id" | "firstName" | "paternalLastName">;
@@ -149,7 +151,7 @@ export interface PaymentHistoryEntry {
  */
 export interface PaymentReceipt {
   id: number;
-  /** Número visible del comprobante, ej. `RECIBO-2026-000042`. */
+  /** Número visible del comprobante, ej. `R-2026-000042`. */
   receiptNumber: string;
   date: string;
   method: PaymentMethod;
@@ -197,6 +199,15 @@ export interface PreventiveControl {
   appliedOn: string;
   nextDoseOn: string;
   overdue: boolean;
+}
+
+/** Todo lo que lleva el carnet de vacunación de una mascota. */
+export interface VaccinationCard {
+  pet: Pick<Pet, "id" | "name" | "species" | "breed" | "sex" | "birthDate">;
+  owner: Pick<Owner, "firstName" | "paternalLastName" | "nationalId"> & { phone?: string };
+  /** En orden cronológico: el carnet se lee como una libreta, de lo más viejo a lo
+   * más nuevo, y así la última fila es siempre la dosis más reciente. */
+  controls: { type: PreventiveControlType; appliedOn: string; nextDoseOn: string; overdue: boolean }[];
 }
 
 export interface Medication {

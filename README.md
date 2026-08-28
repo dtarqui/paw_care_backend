@@ -42,6 +42,10 @@ backend/
 │   ├── schema.prisma      Esquema real (ver también database/MODELO_DATOS.md)
 │   ├── migrations/        Historial de migraciones aplicadas
 │   └── seed.ts            Datos de demo (npm run db:seed)
+├── scripts/
+│   └── previewPdfs.ts     Genera comprobante y carnet en los 4 tamaños de papel
+│                          y los 2 idiomas, con datos inventados, sin tocar la base:
+│                          npx ts-node --transpile-only scripts/previewPdfs.ts <carpeta>
 └── src/
     ├── lib/prisma.ts      Cliente de Prisma compartido
     ├── repositories/      Único lugar que consulta la base de datos
