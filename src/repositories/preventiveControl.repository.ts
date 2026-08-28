@@ -6,6 +6,8 @@ export interface PreventiveControlRecord {
   id: number;
   petId: number;
   type: PreventiveControlType;
+  productName?: string;
+  batchNumber?: string;
   appliedOn: string; // YYYY-MM-DD
   nextDoseOn: string; // YYYY-MM-DD
 }
@@ -17,6 +19,8 @@ function toDomain(row: PreventiveControlRow): PreventiveControlRecord {
     id: row.id,
     petId: row.petId,
     type: row.type,
+    productName: row.productName ?? undefined,
+    batchNumber: row.batchNumber ?? undefined,
     appliedOn: dateOnlyToLiteral(row.appliedOn),
     nextDoseOn: row.nextDoseOn ? dateOnlyToLiteral(row.nextDoseOn) : "",
   };
@@ -25,6 +29,8 @@ function toDomain(row: PreventiveControlRow): PreventiveControlRecord {
 export interface NewPreventiveControlRecord {
   petId: number;
   type: PreventiveControlType;
+  productName?: string;
+  batchNumber?: string;
   appliedOn: string;
   nextDoseOn?: string;
 }
@@ -66,17 +72,23 @@ export const preventiveControlRepository = {
         breed: pet.breed ?? "",
         sex: (pet.sex ?? "") as VaccinationCard["pet"]["sex"],
         birthDate: pet.birthDate ? dateOnlyToLiteral(pet.birthDate) : "",
+        color: pet.color ?? "",
+        weight: pet.weight ? Number(pet.weight) : undefined,
       },
       owner: {
         firstName: pet.owner.firstName,
         paternalLastName: pet.owner.paternalLastName,
+        maternalLastName: pet.owner.maternalLastName ?? undefined,
         nationalId: pet.owner.nationalId,
         phone: pet.owner.phone ?? undefined,
+        address: pet.owner.address ?? undefined,
       },
       controls: pet.preventiveControls.map((control) => {
         const nextDoseOn = control.nextDoseOn ? dateOnlyToLiteral(control.nextDoseOn) : "";
         return {
           type: control.type,
+          productName: control.productName ?? undefined,
+          batchNumber: control.batchNumber ?? undefined,
           appliedOn: dateOnlyToLiteral(control.appliedOn),
           nextDoseOn,
           // Sin próxima dosis no hay nada que vencer: se deja en falso, igual que en
@@ -92,6 +104,8 @@ export const preventiveControlRepository = {
       data: {
         petId: input.petId,
         type: input.type,
+        productName: input.productName ?? null,
+        batchNumber: input.batchNumber ?? null,
         appliedOn: literalDateOnlyToDate(input.appliedOn),
         nextDoseOn: input.nextDoseOn ? literalDateOnlyToDate(input.nextDoseOn) : null,
       },

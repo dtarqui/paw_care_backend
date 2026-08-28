@@ -23,8 +23,19 @@ export class InvalidPreventiveControlDataError extends Error {
 interface NewPreventiveControlInput {
   petId: number;
   type: PreventiveControlType;
+  /** Qué se aplicó y de qué frasco. Opcionales: en una campaña masiva no siempre se
+   * anota el lote, y obligarlo llevaría a inventarlo o a no cargar el control. */
+  productName?: string;
+  batchNumber?: string;
   appliedOn: string;
   nextDoseOn?: string;
+}
+
+/** Un campo de texto vacío llega como `""` desde el formulario; en la base eso es
+ * "sin dato", no un dato vacío. */
+function trimmed(value: string | undefined) {
+  const clean = value?.trim();
+  return clean ? clean : undefined;
 }
 
 async function hydrate(record: PreventiveControlRecord): Promise<PreventiveControl> {
@@ -36,6 +47,8 @@ async function hydrate(record: PreventiveControlRecord): Promise<PreventiveContr
     id: record.id,
     pet: { id: pet.id, name: pet.name, species: pet.species },
     type: record.type,
+    productName: record.productName,
+    batchNumber: record.batchNumber,
     appliedOn: record.appliedOn,
     nextDoseOn: record.nextDoseOn,
     overdue: !!record.nextDoseOn && record.nextDoseOn < todayISO(),
@@ -80,6 +93,8 @@ export const preventiveControlService = {
     const record = await preventiveControlRepository.create({
       petId: input.petId,
       type: input.type,
+      productName: trimmed(input.productName),
+      batchNumber: trimmed(input.batchNumber),
       appliedOn: input.appliedOn,
       nextDoseOn: input.nextDoseOn,
     });

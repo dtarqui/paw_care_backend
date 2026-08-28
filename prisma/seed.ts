@@ -147,14 +147,14 @@ async function main() {
   const today = todayISO();
   await prisma.preventiveControl.createMany({
     data: [
-      { petId: luna.id, type: "VACCINE", appliedOn: literalDateOnlyToDate(addDays(today, -360)), nextDoseOn: literalDateOnlyToDate(addDays(today, 5)) },
-      { petId: max.id, type: "DEWORMING", appliedOn: literalDateOnlyToDate(addDays(today, -60)), nextDoseOn: literalDateOnlyToDate(addDays(today, 25)) },
-      { petId: milo.id, type: "VACCINE", appliedOn: literalDateOnlyToDate(addDays(today, -395)), nextDoseOn: literalDateOnlyToDate(addDays(today, -15)) },
-      { petId: nina.id, type: "DEWORMING", appliedOn: literalDateOnlyToDate(addDays(today, -30)), nextDoseOn: literalDateOnlyToDate(addDays(today, 60)) },
-      { petId: rocky.id, type: "VACCINE", appliedOn: literalDateOnlyToDate(addDays(today, -200)), nextDoseOn: literalDateOnlyToDate(addDays(today, 3)) },
-      { petId: bella.id, type: "DEWORMING", appliedOn: literalDateOnlyToDate(addDays(today, -45)), nextDoseOn: literalDateOnlyToDate(addDays(today, 40)) },
-      { petId: simon.id, type: "VACCINE", appliedOn: literalDateOnlyToDate(addDays(today, -100)), nextDoseOn: literalDateOnlyToDate(addDays(today, 200)) },
-      { petId: kiara.id, type: "DEWORMING", appliedOn: literalDateOnlyToDate(addDays(today, -10)), nextDoseOn: literalDateOnlyToDate(addDays(today, 80)) },
+      { petId: luna.id, type: "VACCINE", productName: "Antirrábica", batchNumber: "A-2451", appliedOn: literalDateOnlyToDate(addDays(today, -360)), nextDoseOn: literalDateOnlyToDate(addDays(today, 5)) },
+      { petId: max.id, type: "DEWORMING", productName: "Endogard", batchNumber: null, appliedOn: literalDateOnlyToDate(addDays(today, -60)), nextDoseOn: literalDateOnlyToDate(addDays(today, 25)) },
+      { petId: milo.id, type: "VACCINE", productName: "Triple felina", batchNumber: "F-1180", appliedOn: literalDateOnlyToDate(addDays(today, -395)), nextDoseOn: literalDateOnlyToDate(addDays(today, -15)) },
+      { petId: nina.id, type: "DEWORMING", productName: "Drontal", batchNumber: "D-7702", appliedOn: literalDateOnlyToDate(addDays(today, -30)), nextDoseOn: literalDateOnlyToDate(addDays(today, 60)) },
+      { petId: rocky.id, type: "VACCINE", productName: "Quíntuple canina", batchNumber: "Q-3390", appliedOn: literalDateOnlyToDate(addDays(today, -200)), nextDoseOn: literalDateOnlyToDate(addDays(today, 3)) },
+      { petId: bella.id, type: "DEWORMING", productName: null, batchNumber: null, appliedOn: literalDateOnlyToDate(addDays(today, -45)), nextDoseOn: literalDateOnlyToDate(addDays(today, 40)) },
+      { petId: simon.id, type: "VACCINE", productName: "Leucemia felina", batchNumber: "L-0455", appliedOn: literalDateOnlyToDate(addDays(today, -100)), nextDoseOn: literalDateOnlyToDate(addDays(today, 200)) },
+      { petId: kiara.id, type: "DEWORMING", productName: "Endogard", batchNumber: "E-9021", appliedOn: literalDateOnlyToDate(addDays(today, -10)), nextDoseOn: literalDateOnlyToDate(addDays(today, 80)) },
     ],
   });
 

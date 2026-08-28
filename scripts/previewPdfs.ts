@@ -45,26 +45,68 @@ const card: VaccinationCard = {
     breed: "Labrador Retriever",
     sex: "Hembra",
     birthDate: "2023-03-10",
+    color: "Negro con manchas blancas",
+    weight: 18.2,
   },
   owner: {
     firstName: "Roberto",
-    paternalLastName: "Vargas Quispe",
+    paternalLastName: "Vargas",
+    maternalLastName: "Quispe",
     nationalId: "5551001",
     phone: "70011122",
+    address: "Calle Murillo 1234, Zona San Pedro",
   },
+  // Mezcla a propósito dosis con producto y lote registrados y dosis sin ellos: la
+  // mitad del historial de cualquier clínica es anterior a que el sistema los guardara,
+  // y esas casillas tienen que salir en blanco para llenarlas a mano.
   controls: [
     { type: "VACCINE", appliedOn: "2023-05-02", nextDoseOn: "2024-05-02", overdue: false },
     { type: "DEWORMING", appliedOn: "2023-08-14", nextDoseOn: "2024-02-14", overdue: false },
-    { type: "VACCINE", appliedOn: "2024-05-06", nextDoseOn: "2025-05-06", overdue: false },
-    { type: "DEWORMING", appliedOn: "2024-11-20", nextDoseOn: "2025-05-20", overdue: true },
-    { type: "VACCINE", appliedOn: "2025-05-09", nextDoseOn: "2026-05-09", overdue: true },
-    { type: "DEWORMING", appliedOn: "2026-02-01", nextDoseOn: "", overdue: false },
-    { type: "VACCINE", appliedOn: "2026-06-15", nextDoseOn: "2027-06-15", overdue: false },
+    {
+      type: "VACCINE",
+      productName: "Quíntuple canina",
+      batchNumber: "Q-3390",
+      appliedOn: "2024-05-06",
+      nextDoseOn: "2025-05-06",
+      overdue: false,
+    },
+    {
+      type: "DEWORMING",
+      productName: "Endogard",
+      appliedOn: "2024-11-20",
+      nextDoseOn: "2025-05-20",
+      overdue: true,
+    },
+    {
+      type: "VACCINE",
+      productName: "Antirrábica",
+      batchNumber: "A-2451",
+      appliedOn: "2025-05-09",
+      nextDoseOn: "2026-05-09",
+      overdue: true,
+    },
+    { type: "DEWORMING", productName: "Drontal", batchNumber: "D-7702", appliedOn: "2026-02-01", nextDoseOn: "", overdue: false },
+    {
+      type: "VACCINE",
+      productName: "Tos de las perreras (KC)",
+      batchNumber: "K-8814",
+      appliedOn: "2026-06-15",
+      nextDoseOn: "2027-06-15",
+      overdue: false,
+    },
   ],
 };
 
 const outDir = process.argv[2] ?? "pdf-preview";
 fs.mkdirSync(outDir, { recursive: true });
+
+/** El caso común no es el historial largo: es la mascota con una o dos dosis, donde
+ * lo que hay que mirar es que queden renglones libres para seguir usando el carnet. */
+const shortCard: VaccinationCard = {
+  ...card,
+  controls: card.controls.slice(0, 2),
+};
+const emptyCard: VaccinationCard = { ...card, controls: [] };
 
 for (const language of LANGUAGES) {
   const label = labelsFor(language);
@@ -72,6 +114,8 @@ for (const language of LANGUAGES) {
     for (const [name, doc] of [
       ["recibo", buildReceiptPdf(receipt, label, language, paper)],
       ["carnet", buildVaccinationCardPdf(card, label, language, paper)],
+      ["carnet-corto", buildVaccinationCardPdf(shortCard, label, language, paper)],
+      ["carnet-vacio", buildVaccinationCardPdf(emptyCard, label, language, paper)],
     ] as const) {
       const file = path.join(outDir, `${name}-${language}-${paper}.pdf`);
       doc.pipe(fs.createWriteStream(file));

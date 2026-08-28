@@ -8,6 +8,10 @@ export interface PaperLayout {
   content: number;
   /** Con papel angosto no entran columnas ni tipografías grandes. */
   narrow: boolean;
+  /** Rollo continuo: `height` es una medida de trabajo, no el alto de una hoja. Un
+   * documento que rellena la página hasta abajo tiene que dejar de hacerlo acá, o
+   * se lleva metros de papel. */
+  continuous: boolean;
 }
 
 /** Altura de sobra para medir: nunca se imprime, solo se usa para dejar que el
@@ -35,6 +39,7 @@ export function renderOnPaper(
     margin: base.margin,
     content: base.width - base.margin * 2,
     narrow: base.narrow,
+    continuous: isContinuous(paper),
   });
 
   if (!isContinuous(paper)) {

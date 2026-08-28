@@ -196,18 +196,44 @@ export interface PreventiveControl {
   id: number;
   pet: Pick<Pet, "id" | "name" | "species">;
   type: PreventiveControlType;
+  /** Qué se aplicó: la vacuna («Quíntuple», «Antirrábica») o el desparasitante. Se
+   * teclea, así que es dato en español como el catálogo de servicios. */
+  productName?: string;
+  /** Lote del frasco. Es lo que pide el SENASAG para el certificado de viaje. */
+  batchNumber?: string;
   appliedOn: string;
   nextDoseOn: string;
   overdue: boolean;
 }
 
-/** Todo lo que lleva el carnet de vacunación de una mascota. */
+/**
+ * Todo lo que lleva el carnet de vacunación de una mascota.
+ *
+ * Lleva más datos de identificación que el resto de las pantallas —color, peso,
+ * dirección del propietario— porque un carnet lo lee un tercero que no tiene acceso
+ * al sistema: otra clínica, una guardería o una aduana. Ahí "Luna, perro" no alcanza
+ * para saber que el animal que tienen delante es el del papel.
+ */
 export interface VaccinationCard {
-  pet: Pick<Pet, "id" | "name" | "species" | "breed" | "sex" | "birthDate">;
-  owner: Pick<Owner, "firstName" | "paternalLastName" | "nationalId"> & { phone?: string };
+  pet: Pick<Pet, "id" | "name" | "species" | "breed" | "sex" | "birthDate"> & {
+    color: string;
+    weight?: number;
+  };
+  owner: Pick<Owner, "firstName" | "paternalLastName" | "nationalId"> & {
+    maternalLastName?: string;
+    phone?: string;
+    address?: string;
+  };
   /** En orden cronológico: el carnet se lee como una libreta, de lo más viejo a lo
    * más nuevo, y así la última fila es siempre la dosis más reciente. */
-  controls: { type: PreventiveControlType; appliedOn: string; nextDoseOn: string; overdue: boolean }[];
+  controls: {
+    type: PreventiveControlType;
+    productName?: string;
+    batchNumber?: string;
+    appliedOn: string;
+    nextDoseOn: string;
+    overdue: boolean;
+  }[];
 }
 
 export interface Medication {

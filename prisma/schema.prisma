@@ -270,13 +270,20 @@ model QrCharge {
 }
 
 model PreventiveControl {
-  id         Int                   @id @default(autoincrement())
-  petId      Int
-  pet        Pet                   @relation(fields: [petId], references: [id], onDelete: Cascade)
-  type       PreventiveControlType
-  appliedOn  DateTime              @db.Date
-  nextDoseOn DateTime?             @db.Date
-  createdAt  DateTime              @default(now())
+  id          Int                   @id @default(autoincrement())
+  petId       Int
+  pet         Pet                   @relation(fields: [petId], references: [id], onDelete: Cascade)
+  type        PreventiveControlType
+  // Qué se aplicó y de qué frasco. Es lo que un tercero busca en el carnet: el
+  // SENASAG pide marca y lote de la antirrábica para el certificado de viaje, y otra
+  // clínica necesita saber qué se puso para decidir el refuerzo. Opcionales porque
+  // los controles ya cargados no los tienen, y porque en una campaña de vacunación
+  // masiva no siempre se anota el lote.
+  productName String?               @db.VarChar(80)
+  batchNumber String?               @db.VarChar(40)
+  appliedOn   DateTime              @db.Date
+  nextDoseOn  DateTime?             @db.Date
+  createdAt   DateTime              @default(now())
 
   notifications Notification[]
 

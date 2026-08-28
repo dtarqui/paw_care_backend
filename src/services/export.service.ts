@@ -189,12 +189,16 @@ export async function generateFullExport(language: Language): Promise<ExcelJS.Wo
     [
       { header: t("pet"), key: "pet", width: 18 },
       { header: t("type"), key: "type", width: 16 },
+      { header: t("productName"), key: "productName", width: 22 },
+      { header: t("batchNumber"), key: "batchNumber", width: 14 },
       { header: t("appliedOn"), key: "appliedOn", width: 16 },
       { header: t("nextDoseOn"), key: "nextDoseOn", width: 16 },
     ],
     controls.map((c) => ({
       pet: petById.get(c.petId)?.name ?? "—",
       type: label.preventiveControlType(c.type),
+      productName: c.productName ?? "",
+      batchNumber: c.batchNumber ?? "",
       appliedOn: c.appliedOn,
       nextDoseOn: c.nextDoseOn,
     }))

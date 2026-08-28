@@ -224,6 +224,37 @@ Se perdieron todas las tablas `st_*` —recuperadas con `prisma db seed`, porque
 
 - [x] **`PaymentHistoryEntry` ahora trae `receiptNumber`.** La fila de «Últimos pagos» fabricaba `R-55` para nombrar el archivo — un número que no existe en ningún comprobante. El formato vive en `utils/receiptNumber.ts` y debe salir de ahí una sola vez, no reimplementarse en el frontend.
 
+### Qué vacuna y qué lote (MEJORAS_PRODUCTO 1.7)
+
+El carnet dejaba esas casillas en blanco porque el sistema no guardaba el dato. Ahora sí, y es lo que un tercero busca: el SENASAG pide marca y lote de la antirrábica para el certificado de viaje.
+
+- [x] **Dos columnas opcionales en `PreventiveControl`**: `productName` (VarChar 80) y `batchNumber` (VarChar 40). Opcionales a propósito — en una campaña masiva no siempre se anota el lote, y exigirlo llevaría a inventarlo o a no cargar el control.
+- [x] **Migración generada sin tocar ninguna base**, con la receta de `CLAUDE.md`: copia del schema previo, `migrate diff --from-schema-datamodel … --to-schema-datamodel … --script`, leer el SQL (dos `ADD COLUMN`, ningún `DROP`) y recién ahí `migrate deploy`. Nunca `--shadow-database-url`, que es lo que vació la base en la sesión 16.
+- [x] `productName` es **dato en español**, como el catálogo de servicios: lo teclea la clínica y no se traduce.
+- [x] Un campo vacío del formulario (`""` o solo espacios) se guarda como `null`, no como cadena vacía: en la base eso es ausencia de dato, y una cadena vacía haría que el carnet imprima un renglón vacío en vez de dejar la casilla libre.
+- [x] **El carnet los imprime cuando están** y deja la casilla en blanco cuando no — que es la mitad del historial viejo. La casilla de la firma y el sello sigue en blanco siempre: esa es física.
+- [x] También salen en el **respaldo completo en Excel** (hoja ControlesPreventivos) y en la semilla de demostración, con una dosis a propósito sin registrar para que se vea el caso mixto.
+- [x] Dos tests nuevos: que se guardan, y que un campo en blanco no se guarda como cadena vacía. 41 en verde.
+
+### Rediseño del carnet contra el carnet boliviano de papel
+
+El primer carnet era el historial de la app puesto en una hoja. Buscando cómo es el carnet real en Bolivia aparecieron tres cosas que lo cambiaban entero:
+
+1. El registro **vale por la firma, el sello y el CI del veterinario** que aplicó la dosis, no por lo que imprima un sistema.
+2. El lote se acredita **pegando la etiqueta del frasco** en su casilla — por eso el carnet de papel tiene casillas vacías, no es un descuido.
+3. El carnet **no habilita a viajar**: para salir del país hace falta además el certificado zoosanitario del SENASAG, emitido dentro de los 10 días previos.
+
+- [x] **Panel de identificación único** con mascota (especie · raza · sexo, nacimiento, color, peso) y propietario (nombre completo, CI, teléfono, dirección). El carnet lo lee alguien sin acceso al sistema: "Luna, perro" no alcanza para saber que el animal que tiene delante es el del papel. Los datos ya estaban en la base —`Pet.color`, `Pet.weight`, `Owner.address`, `Owner.maternalLastName`—, solo no llegaban al `VaccinationCard`.
+- [x] **Dos registros separados**, vacunación y desparasitación, cada uno con su tabla reglada: son dos calendarios distintos y quien revisa busca uno, no una lista mezclada.
+- [x] **Casillas en blanco para vacuna/lote y firma/sello**, con el renglón dimensionado (~8 mm) para que entre la etiqueta del frasco.
+- [x] **Renglones vacíos hasta el pie**, repartidos entre las dos tablas de una sola vez: el carnet se sigue usando después de imprimirlo, y uno que termina donde termina el historial obliga a reimprimirlo en la visita siguiente.
+- [x] **Notas al pie como elemento de hoja** (firma y sello · antirrábica anual · SENASAG), a altura fija y repetidas en cada página.
+- [x] En rollo de 80 mm el documento se degrada a un resumen sin casillas: sobre papel térmico no se firma, se borra.
+
+**Tres bugs de maquetación que solo se vieron mirando el PDF**, no compilando: el pie caía en una segunda hoja con dos renglones de letra chica (se dibujaba después de las tablas en vez de a altura fija); el reparto de renglones libres descontaba el pie dos veces y le daba a la desparasitación más lugar que a la vacunación; y `doc.text` del título adelanta `doc.y` por su cuenta, así que cada tabla ocupaba 12pt más de los calculados — lo justo para partir la segunda tabla en dos hojas.
+
+`scripts/previewPdfs.ts` genera ahora tres carnets —historial largo, dos dosis y vacío— porque el que se ve bien siempre es el de una sola dosis.
+
 **Verificado**, no asumido: los ocho PDF abiertos y leídos uno por uno, el `Content-Disposition` traducido (`carnet-Luna.pdf` / `vaccination-card-Luna.pdf`), 404 con una mascota inexistente, y el alto del ticket terminando junto al contenido. 29 tests en verde.
 
 ---
