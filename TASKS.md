@@ -259,6 +259,18 @@ El primer carnet era el historial de la app puesto en una hoja. Buscando cómo e
 
 ---
 
+## Correcciones y mejoras (sesión 19 — verificación de permisos por rol)
+
+Un reporte de que un Veterinario llegaba a pantallas de Administrador obligaba a comprobar si el backend estaba dejando pasar algo. **No: los 22 endpoints administrativos ya respondían 403** a tokens de VET y de RECEPTIONIST, y 401 sin token. El problema era del frontend (ver `frontend/TASKS.md` sesión 19).
+
+- [x] **`routes/roleGuards.routes.test.ts`** fija ese comportamiento para que no se pierda: la lista completa de rutas exclusivas de Administrador, verificada con los dos roles no administradores y sin token.
+- [x] **Con un caso de control que evita un test hueco**: con token de ADMIN esas mismas rutas **no** pueden responder 403. Sin eso, el test seguiría en verde si las rutas empezaran a fallar por cualquier otro motivo, o si dejaran de existir.
+- [x] Comprobado que el test detecta la regresión de verdad: quitándole el `requireRole("ADMIN")` a `/api/audit-logs` fallan 2 de los 4 casos; con el guarda puesto, los 4 en verde. 45 tests en total.
+
+**Al agregar un endpoint administrativo nuevo hay que sumarlo a esa lista en la misma tanda que a `routes/index.ts`** — es el único lugar que avisa si alguien olvida el guarda.
+
+---
+
 ## Tarea 00 — Setup del backend
 
 **Depende de:** nada (primera tarea).
